@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useEffect } from 'react';
 import { X } from 'lucide-react';
 import LoginForm from './LoginForm';
 import SignupForm from './SignupForm';
@@ -12,11 +13,15 @@ interface AuthModalProps {
 const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialView }) => {
   const [currentView, setCurrentView] = useState<'login' | 'signup'>(initialView);
 
+  useEffect(() => {
+    setCurrentView(initialView);
+  }, [initialView]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg max-w-md w-full mx-4 max-h-screen overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" onClick={onClose}>
+      <div className="bg-white rounded-lg max-w-md w-full mx-4 max-h-screen overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-center p-6 border-b">
           <h2 className="text-2xl font-bold text-gray-900">
             {currentView === 'login' ? 'Welcome Back' : 'Join LitPlatform'}
