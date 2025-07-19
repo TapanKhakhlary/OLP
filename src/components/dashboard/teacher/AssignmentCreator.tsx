@@ -12,18 +12,8 @@ const AssignmentCreator: React.FC = () => {
     maxScore: 100
   });
 
-  const books = [
-    { id: '1', title: 'To Kill a Mockingbird', author: 'Harper Lee' },
-    { id: '2', title: 'The Great Gatsby', author: 'F. Scott Fitzgerald' },
-    { id: '3', title: '1984', author: 'George Orwell' },
-    { id: '4', title: 'Pride and Prejudice', author: 'Jane Austen' }
-  ];
-
-  const classes = [
-    { id: '1', name: 'English Literature - Grade 10', code: 'ENG10-2025' },
-    { id: '2', name: 'Advanced Reading - Grade 11', code: 'ADV11-2025' },
-    { id: '3', name: 'Creative Writing - Grade 9', code: 'CRW09-2025' }
-  ];
+  const books: any[] = [];
+  const classes: any[] = [];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
