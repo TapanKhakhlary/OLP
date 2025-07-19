@@ -23,9 +23,6 @@ const Header: React.FC<HeaderProps> = ({ onLoginClick, onSignupClick }) => {
             <a href="#how-it-works" className="text-gray-700 hover:text-blue-600 transition-colors">
               How It Works
             </a>
-            <a href="#for-schools" className="text-gray-700 hover:text-blue-600 transition-colors">
-              For Schools
-            </a>
           </nav>
 
           <div className="flex items-center space-x-4">
