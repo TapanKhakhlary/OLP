@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
-import { Plus, Calendar, Users, BookOpen } from 'lucide-react';
+import { Plus, Calendar, Users, Book } from 'lucide-react';
 
 const AssignmentCreator: React.FC = () => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    bookId: '',
+    courseCode: '',
+    courseTitle: '',
     classId: '',
     dueDate: '',
     instructions: '',
     maxScore: 100
   });
 
-  const books: any[] = [];
   const classes: any[] = [];
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -23,7 +23,8 @@ const AssignmentCreator: React.FC = () => {
     setFormData({
       title: '',
       description: '',
-      bookId: '',
+      courseCode: '',
+      courseTitle: '',
       classId: '',
       dueDate: '',
       instructions: '',
@@ -88,29 +89,42 @@ const AssignmentCreator: React.FC = () => {
             />
           </div>
 
-          {/* Book and Class Selection */}
+          {/* Course and Class Selection */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label htmlFor="bookId" className="block text-sm font-medium text-gray-700 mb-2">
-                <BookOpen className="inline h-4 w-4 mr-1" />
-                Select Book *
+              <label htmlFor="courseCode" className="block text-sm font-medium text-gray-700 mb-2">
+                <Book className="inline h-4 w-4 mr-1" />
+                Course Code *
               </label>
-              <select
-                id="bookId"
-                value={formData.bookId}
-                onChange={(e) => setFormData({ ...formData, bookId: e.target.value })}
+              <input
+                type="text"
+                id="courseCode"
+                value={formData.courseCode}
+                onChange={(e) => setFormData({ ...formData, courseCode: e.target.value })}
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              >
-                <option value="">Choose a book</option>
-                {books.map(book => (
-                  <option key={book.id} value={book.id}>
-                    {book.title} - {book.author}
-                  </option>
-                ))}
-              </select>
+                placeholder="e.g., ENG101"
+              />
             </div>
 
+            <div>
+              <label htmlFor="courseTitle" className="block text-sm font-medium text-gray-700 mb-2">
+                Course Title *
+              </label>
+              <input
+                type="text"
+                id="courseTitle"
+                value={formData.courseTitle}
+                onChange={(e) => setFormData({ ...formData, courseTitle: e.target.value })}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                placeholder="e.g., Introduction to Literature"
+              />
+            </div>
+          </div>
+
+          {/* Class Selection */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label htmlFor="classId" className="block text-sm font-medium text-gray-700 mb-2">
                 <Users className="inline h-4 w-4 mr-1" />
@@ -131,22 +145,23 @@ const AssignmentCreator: React.FC = () => {
                 ))}
               </select>
             </div>
-          </div>
 
-          {/* Due Date */}
-          <div>
-            <label htmlFor="dueDate" className="block text-sm font-medium text-gray-700 mb-2">
-              <Calendar className="inline h-4 w-4 mr-1" />
-              Due Date *
-            </label>
-            <input
-              type="date"
-              id="dueDate"
-              value={formData.dueDate}
-              onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            />
+            <div className="flex items-end">
+              <div className="w-full">
+                <label htmlFor="dueDate" className="block text-sm font-medium text-gray-700 mb-2">
+                  <Calendar className="inline h-4 w-4 mr-1" />
+                  Due Date *
+                </label>
+                <input
+                  type="date"
+                  id="dueDate"
+                  value={formData.dueDate}
+                  onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                />
+              </div>
+            </div>
           </div>
 
           {/* Instructions */}

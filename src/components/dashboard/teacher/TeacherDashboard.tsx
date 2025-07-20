@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Users, BookOpen, PenTool, GraduationCap, BarChart3 } from 'lucide-react';
+import { Users, BookOpen, PenTool, GraduationCap, BarChart3, Book } from 'lucide-react';
 import DashboardSidebar from '../DashboardSidebar';
 import ClassManagement from './ClassManagement';
-import ContentLibrary from './ContentLibrary';
+import Library from './Library';
+import CourseManagement from './CourseManagement';
 import AssignmentCreator from './AssignmentCreator';
 import GradingCenter from './GradingCenter';
 import Analytics from './Analytics';
@@ -12,7 +13,8 @@ const TeacherDashboard: React.FC = () => {
 
   const sidebarItems = [
     { id: 'classes', label: 'Class Management', icon: Users },
-    { id: 'library', label: 'Content Library', icon: BookOpen },
+    { id: 'courses', label: 'Course Management', icon: Book },
+    { id: 'library', label: 'Library', icon: BookOpen },
     { id: 'assignments', label: 'Assignment Creator', icon: PenTool },
     { id: 'grading', label: 'Grading Center', icon: GraduationCap },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 }
@@ -22,8 +24,10 @@ const TeacherDashboard: React.FC = () => {
     switch (activeView) {
       case 'classes':
         return <ClassManagement />;
+      case 'courses':
+        return <CourseManagement />;
       case 'library':
-        return <ContentLibrary />;
+        return <Library />;
       case 'assignments':
         return <AssignmentCreator />;
       case 'grading':
