@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { TrendingUp, MessageSquare, BookOpen } from 'lucide-react';
+import { TrendingUp, MessageSquare, BookOpen, Settings } from 'lucide-react';
 import DashboardSidebar from '../DashboardSidebar';
 import ChildProgress from './ChildProgress';
 import ResultsFeedback from './ResultsFeedback';
 import Messages from './Messages';
+import ParentSettings from './ParentSettings';
 
 const ParentDashboard: React.FC = () => {
   const [activeView, setActiveView] = useState('progress');
@@ -11,7 +12,8 @@ const ParentDashboard: React.FC = () => {
   const sidebarItems = [
     { id: 'progress', label: "Child's Progress", icon: TrendingUp },
     { id: 'results', label: 'Results & Feedback', icon: BookOpen },
-    { id: 'messages', label: 'Messages', icon: MessageSquare }
+    { id: 'messages', label: 'Messages', icon: MessageSquare },
+    { id: 'settings', label: 'Settings', icon: Settings }
   ];
 
   const renderContent = () => {
@@ -22,6 +24,8 @@ const ParentDashboard: React.FC = () => {
         return <ResultsFeedback />;
       case 'messages':
         return <Messages />;
+      case 'settings':
+        return <ParentSettings />;
       default:
         return <ChildProgress />;
     }

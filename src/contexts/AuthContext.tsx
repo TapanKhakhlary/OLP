@@ -89,7 +89,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     email: string,
     password: string,
     role: UserRole,
-    classCode?: string,
     parentCode?: string
   ) => {
     const { data, error } = await supabase.auth.signUp({
@@ -112,12 +111,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (profileError) throw profileError;
 
       // Handle role-specific logic
-      if (role === 'student' && classCode) {
-        await joinClass(data.user.id, classCode);
-      } else if (role === 'parent' && parentCode) {
+      if (role === 'parent' && parentCode) {
         await linkToChild(data.user.id, parentCode);
-      } else if (role === 'teacher') {
-        // Teachers can create classes after signup
       }
 
       // User profile will be fetched automatically by the auth state change listener

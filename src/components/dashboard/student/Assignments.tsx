@@ -1,13 +1,94 @@
 import React from 'react';
 import { useState, useEffect } from 'react';
-import { Calendar, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, CheckCircle, AlertCircle, Upload, FileText, Cloud } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../contexts/AuthContext';
+
+interface FileUploadProps {
+  onFileSelect: (file: File) => void;
+}
+
+const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect }) => {
+  const [dragActive, setDragActive] = useState(false);
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      onFileSelect(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      onFileSelect(e.target.files[0]);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div
+        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+          dragActive 
+            ? 'border-blue-500 bg-blue-50' 
+            : 'border-gray-300 hover:border-gray-400'
+        }`}
+        onDragEnter={handleDrag}
+        onDragLeave={handleDrag}
+        onDragOver={handleDrag}
+        onDrop={handleDrop}
+      >
+        <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Drop files here</h3>
+        <p className="text-gray-600 mb-4">or click to browse</p>
+        <input
+          type="file"
+          onChange={handleFileInput}
+          className="hidden"
+          id="file-upload"
+          accept=".pdf,.doc,.docx,.txt"
+        />
+        <label
+          htmlFor="file-upload"
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors cursor-pointer inline-block"
+        >
+          Browse Files
+        </label>
+      </div>
+      
+      <div className="flex space-x-4">
+        <button className="flex-1 flex items-center justify-center space-x-2 p-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+          <FileText className="h-5 w-5 text-gray-600" />
+          <span className="text-gray-700">Create Document</span>
+        </button>
+        <button className="flex-1 flex items-center justify-center space-x-2 p-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+          <Cloud className="h-5 w-5 text-gray-600" />
+          <span className="text-gray-700">From Drive</span>
+        </button>
+      </div>
+    </div>
+  );
+};
 
 const Assignments: React.FC = () => {
   const { user } = useAuth();
   const [assignments, setAssignments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedAssignment, setSelectedAssignment] = useState<any>(null);
+  const [submissionText, setSubmissionText] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -102,6 +183,145 @@ const Assignments: React.FC = () => {
     return new Date(dueDate) < new Date();
   };
 
+  const handleFileSelect = (file: File) => {
+    setSelectedFile(file);
+  };
+
+  const handleSubmit = async () => {
+    if (!selectedAssignment || (!submissionText.trim() && !selectedFile)) return;
+
+    try {
+      // In a real implementation, you would upload the file to storage first
+      const content = selectedFile 
+        ? `File submitted: ${selectedFile.name}` 
+        : submissionText;
+
+      const { error } = await supabase
+        .from('submissions')
+        .upsert({
+          assignment_id: selectedAssignment.id,
+          student_id: user?.id,
+          content,
+          status: 'submitted',
+          submitted_at: new Date().toISOString(),
+        });
+
+      if (error) throw error;
+
+      alert('Assignment submitted successfully!');
+      setSelectedAssignment(null);
+      setSubmissionText('');
+      setSelectedFile(null);
+      fetchAssignments();
+    } catch (error) {
+      console.error('Error submitting assignment:', error);
+      alert('Error submitting assignment. Please try again.');
+    }
+  };
+
+  if (selectedAssignment) {
+    return (
+      <div>
+        <div className="mb-8">
+          <button
+            onClick={() => setSelectedAssignment(null)}
+            className="text-blue-600 hover:text-blue-800 mb-4"
+          >
+            ← Back to Assignments
+          </button>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">{selectedAssignment.title}</h1>
+          <p className="text-gray-600">{selectedAssignment.description}</p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Assignment Details */}
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Assignment Details</h2>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                <p className="text-gray-900">{new Date(selectedAssignment.due_date).toLocaleDateString()}</p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Max Score</label>
+                <p className="text-gray-900">{selectedAssignment.max_score} points</p>
+              </div>
+              
+              {selectedAssignment.instructions && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Instructions</label>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <p className="text-gray-700">{selectedAssignment.instructions}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Submission Area */}
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Your Submission</h2>
+            
+            <div className="space-y-6">
+              {/* Text Submission */}
+              <div>
+                <label htmlFor="submission" className="block text-sm font-medium text-gray-700 mb-2">
+                  Write your response
+                </label>
+                <textarea
+                  id="submission"
+                  value={submissionText}
+                  onChange={(e) => setSubmissionText(e.target.value)}
+                  rows={6}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Type your response here..."
+                />
+              </div>
+
+              <div className="text-center text-gray-500">
+                <span>OR</span>
+              </div>
+
+              {/* File Upload */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Upload a file
+                </label>
+                <FileUpload onFileSelect={handleFileSelect} />
+                {selectedFile && (
+                  <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-green-800 text-sm">
+                      Selected: {selectedFile.name}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Submit Button */}
+              <div className="flex space-x-4">
+                <button
+                  onClick={() => setSelectedAssignment(null)}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSubmit}
+                  disabled={!submissionText.trim() && !selectedFile}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Submit Assignment
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="mb-8">
@@ -147,8 +367,16 @@ const Assignments: React.FC = () => {
                 </div>
                 <div className="col-span-1">
                   <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                    View
+                    {['submitted', 'graded'].includes(assignment.submissions?.[0]?.status || 'not-started') ? 'View' : 'Start'}
                   </button>
+                  {!['submitted', 'graded'].includes(assignment.submissions?.[0]?.status || 'not-started') && (
+                    <button
+                      onClick={() => setSelectedAssignment(assignment)}
+                      className="ml-2 text-green-600 hover:text-green-800 text-sm font-medium"
+                    >
+                      Submit
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

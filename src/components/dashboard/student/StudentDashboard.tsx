@@ -1,37 +1,53 @@
 import React, { useState } from 'react';
-import { BookOpen, Calendar, TrendingUp, Award, Star } from 'lucide-react';
+import { BookOpen, Calendar, TrendingUp, Award, Star, Home, CheckSquare, Settings, UserPlus } from 'lucide-react';
 import DashboardSidebar from '../DashboardSidebar';
+import StudentHome from './StudentHome';
 import MyLibrary from './MyLibrary';
 import Assignments from './Assignments';
 import Progress from './Progress';
 import MarksResults from './MarksResults';
 import Achievements from './Achievements';
+import JoinClass from './JoinClass';
+import TodoList from './TodoList';
+import StudentSettings from './StudentSettings';
 
 const StudentDashboard: React.FC = () => {
-  const [activeView, setActiveView] = useState('library');
+  const [activeView, setActiveView] = useState('home');
 
   const sidebarItems = [
+    { id: 'home', label: 'Home', icon: Home },
     { id: 'library', label: 'My Library', icon: BookOpen },
     { id: 'assignments', label: 'Assignments', icon: Calendar },
+    { id: 'todo', label: 'To-do', icon: CheckSquare },
     { id: 'progress', label: 'Progress', icon: TrendingUp },
     { id: 'marks', label: 'Marks & Results', icon: Star },
-    { id: 'achievements', label: 'Achievements', icon: Award }
+    { id: 'achievements', label: 'Achievements', icon: Award },
+    { id: 'join-class', label: 'Join Class', icon: UserPlus },
+    { id: 'settings', label: 'Settings', icon: Settings }
   ];
 
   const renderContent = () => {
     switch (activeView) {
+      case 'home':
+        return <StudentHome />;
       case 'library':
         return <MyLibrary />;
       case 'assignments':
         return <Assignments />;
+      case 'todo':
+        return <TodoList />;
       case 'progress':
         return <Progress />;
       case 'marks':
         return <MarksResults />;
       case 'achievements':
         return <Achievements />;
+      case 'join-class':
+        return <JoinClass />;
+      case 'settings':
+        return <StudentSettings />;
       default:
-        return <MyLibrary />;
+        return <StudentHome />;
     }
   };
 

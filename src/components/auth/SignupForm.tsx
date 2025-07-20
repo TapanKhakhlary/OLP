@@ -116,22 +116,6 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, onSwitchToLogin }) =
         </select>
       </div>
 
-      {formData.role === 'student' && (
-        <div>
-          <label htmlFor="classCode" className="block text-sm font-medium text-gray-700 mb-2">
-            Class Code
-          </label>
-          <input
-            type="text"
-            id="classCode"
-            value={formData.classCode}
-            onChange={(e) => setFormData({ ...formData, classCode: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Enter your teacher's class code"
-          />
-        </div>
-      )}
-
       {formData.role === 'parent' && (
         <div>
           <label htmlFor="parentCode" className="block text-sm font-medium text-gray-700 mb-2">
