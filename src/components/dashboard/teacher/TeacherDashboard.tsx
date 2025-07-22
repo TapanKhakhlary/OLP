@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { Users, BookOpen, MessageSquare, BarChart3, Home, Settings } from 'lucide-react';
+import { Users, BookOpen, MessageSquare, Home, Settings } from 'lucide-react';
 import DashboardSidebar from '../DashboardSidebar';
 import TeacherHome from './TeacherHome';
 import ClassManagement from './ClassManagement';
 import Library from './Library';
 import MessageCenter from './MessageCenter';
-import Analytics from './Analytics';
 import TeacherSettings from './TeacherSettings';
 
 const TeacherDashboard: React.FC = () => {
@@ -16,7 +15,6 @@ const TeacherDashboard: React.FC = () => {
     { id: 'classes', label: 'Class Management', icon: Users },
     { id: 'library', label: 'Library', icon: BookOpen },
     { id: 'messages', label: 'Message Center', icon: MessageSquare },
-    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'settings', label: 'Settings', icon: Settings }
   ];
 
@@ -30,8 +28,6 @@ const TeacherDashboard: React.FC = () => {
         return <Library />;
       case 'messages':
         return <MessageCenter />;
-      case 'analytics':
-        return <Analytics />;
       case 'settings':
         return <TeacherSettings />;
       default:

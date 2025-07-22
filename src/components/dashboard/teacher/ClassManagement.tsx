@@ -332,6 +332,9 @@ const ClassManagement: React.FC = () => {
             <div>
               <div className="flex justify-between items-center mb-6">
                 <h1 className="text-3xl font-bold text-gray-900">Assignments</h1>
+              </div>
+              
+              <div className="mb-6">
                 <button
                   onClick={() => setView({ ...view, activeTab: 'create-assignment' })}
                   className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"

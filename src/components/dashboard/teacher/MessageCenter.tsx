@@ -10,24 +10,7 @@ const MessageCenter: React.FC = () => {
   });
 
   const [messages] = useState([
-    {
-      id: 1,
-      type: 'sent',
-      recipient: 'All Students - Math 101',
-      subject: 'Assignment Due Tomorrow',
-      message: 'Reminder: Your essay on Shakespeare is due tomorrow at 11:59 PM.',
-      timestamp: '2 hours ago',
-      read: true
-    },
-    {
-      id: 2,
-      type: 'received',
-      sender: 'Parent - Sarah Johnson',
-      subject: 'Question about homework',
-      message: 'Hi, I wanted to ask about the reading assignment for this week.',
-      timestamp: '1 day ago',
-      read: false
-    }
+    // No dummy data - will be populated from database
   ]);
 
   const handleSendMessage = (e: React.FormEvent) => {
@@ -183,11 +166,7 @@ const MessageCenter: React.FC = () => {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Sample students for parent updates */}
-          {[
-            { name: 'Emma Wilson', status: 'excellent', note: 'Great participation in class discussions' },
-            { name: 'James Smith', status: 'concern', note: 'Missing recent assignments' },
-            { name: 'Sofia Garcia', status: 'good', note: 'Showing improvement in reading comprehension' }
-          ].map((student, index) => (
+          {[].map((student, index) => (
             <div key={index} className="border border-gray-200 rounded-lg p-4">
               <h3 className="font-medium text-gray-900 mb-2">{student.name}</h3>
               <p className="text-sm text-gray-600 mb-3">{student.note}</p>
@@ -207,6 +186,13 @@ const MessageCenter: React.FC = () => {
               </div>
             </div>
           ))}
+          
+          {/* Empty state when no students */}
+          <div className="col-span-full text-center py-8">
+            <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No students yet</h3>
+            <p className="text-gray-600">Students will appear here when they join your classes</p>
+          </div>
         </div>
       </div>
     </div>
