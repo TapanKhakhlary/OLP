@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
-import { Users, BookOpen, PenTool, GraduationCap, BarChart3, Book, Home, Settings } from 'lucide-react';
+import { Users, BookOpen, MessageSquare, BarChart3, Home, Settings } from 'lucide-react';
 import DashboardSidebar from '../DashboardSidebar';
 import TeacherHome from './TeacherHome';
 import ClassManagement from './ClassManagement';
 import Library from './Library';
-import CourseManagement from './CourseManagement';
-import AssignmentCreator from './AssignmentCreator';
-import GradingCenter from './GradingCenter';
+import MessageCenter from './MessageCenter';
 import Analytics from './Analytics';
 import TeacherSettings from './TeacherSettings';
 
@@ -16,10 +14,8 @@ const TeacherDashboard: React.FC = () => {
   const sidebarItems = [
     { id: 'home', label: 'Home', icon: Home },
     { id: 'classes', label: 'Class Management', icon: Users },
-    { id: 'courses', label: 'Course Management', icon: Book },
     { id: 'library', label: 'Library', icon: BookOpen },
-    { id: 'assignments', label: 'Assignment Creator', icon: PenTool },
-    { id: 'grading', label: 'Grading Center', icon: GraduationCap },
+    { id: 'messages', label: 'Message Center', icon: MessageSquare },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'settings', label: 'Settings', icon: Settings }
   ];
@@ -30,14 +26,10 @@ const TeacherDashboard: React.FC = () => {
         return <TeacherHome />;
       case 'classes':
         return <ClassManagement />;
-      case 'courses':
-        return <CourseManagement />;
       case 'library':
         return <Library />;
-      case 'assignments':
-        return <AssignmentCreator />;
-      case 'grading':
-        return <GradingCenter />;
+      case 'messages':
+        return <MessageCenter />;
       case 'analytics':
         return <Analytics />;
       case 'settings':

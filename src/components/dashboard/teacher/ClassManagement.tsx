@@ -1,17 +1,32 @@
-import React, { useState } from 'react';
-import { useEffect } from 'react';
-import { Plus, Users, Copy, Settings } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Users, Copy, Settings, Upload, MessageSquare, FileText, Play, BarChart3, ArrowLeft } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../contexts/AuthContext';
+
+interface ClassView {
+  type: 'list' | 'detail';
+  classId?: string;
+  activeTab?: string;
+}
 
 const ClassManagement: React.FC = () => {
   const { user } = useAuth();
   const [classes, setClasses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedClass, setSelectedClass] = useState<string | null>(null);
+  const [view, setView] = useState<ClassView>({ type: 'list' });
   const [students, setStudents] = useState<any[]>([]);
+  const [assignments, setAssignments] = useState<any[]>([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newClassName, setNewClassName] = useState('');
+
+  // Assignment creation form
+  const [assignmentForm, setAssignmentForm] = useState({
+    title: '',
+    description: '',
+    instructions: '',
+    dueDate: '',
+    maxScore: 100
+  });
 
   useEffect(() => {
     if (user) {
@@ -50,9 +65,10 @@ const ClassManagement: React.FC = () => {
     }
   };
 
-  const fetchClassStudents = async (classId: string) => {
+  const fetchClassData = async (classId: string) => {
     try {
-      const { data, error } = await supabase
+      // Fetch students
+      const { data: studentsData, error: studentsError } = await supabase
         .from('class_enrollments')
         .select(`
           *,
@@ -63,11 +79,28 @@ const ClassManagement: React.FC = () => {
         `)
         .eq('class_id', classId);
 
-      if (error) throw error;
+      if (studentsError) throw studentsError;
+      setStudents(studentsData || []);
 
-      setStudents(data || []);
+      // Fetch assignments
+      const { data: assignmentsData, error: assignmentsError } = await supabase
+        .from('assignments')
+        .select(`
+          *,
+          submissions (
+            id,
+            status,
+            student_id,
+            profiles (name)
+          )
+        `)
+        .eq('class_id', classId)
+        .order('created_at', { ascending: false });
+
+      if (assignmentsError) throw assignmentsError;
+      setAssignments(assignmentsData || []);
     } catch (error) {
-      console.error('Error fetching students:', error);
+      console.error('Error fetching class data:', error);
     }
   };
 
@@ -94,19 +127,56 @@ const ClassManagement: React.FC = () => {
     }
   };
 
+  const createAssignment = async () => {
+    if (!assignmentForm.title.trim() || !view.classId) return;
+
+    try {
+      const { error } = await supabase
+        .from('assignments')
+        .insert({
+          title: assignmentForm.title,
+          description: assignmentForm.description,
+          instructions: assignmentForm.instructions,
+          class_id: view.classId,
+          teacher_id: user?.id,
+          due_date: assignmentForm.dueDate,
+          max_score: assignmentForm.maxScore,
+        });
+
+      if (error) throw error;
+
+      setAssignmentForm({
+        title: '',
+        description: '',
+        instructions: '',
+        dueDate: '',
+        maxScore: 100
+      });
+
+      fetchClassData(view.classId);
+      alert('Assignment created successfully!');
+    } catch (error) {
+      console.error('Error creating assignment:', error);
+      alert('Error creating assignment. Please try again.');
+    }
+  };
+
   const generateClassCode = () => {
     return Math.random().toString(36).substr(2, 8).toUpperCase();
   };
 
   const copyClassCode = (code: string) => {
     navigator.clipboard.writeText(code);
-    // In a real app, you'd show a toast notification here
     alert('Class code copied to clipboard!');
   };
 
   const handleClassClick = (classId: string) => {
-    setSelectedClass(classId);
-    fetchClassStudents(classId);
+    setView({ type: 'detail', classId, activeTab: 'overview' });
+    fetchClassData(classId);
+  };
+
+  const backToList = () => {
+    setView({ type: 'list' });
   };
 
   if (loading) {
@@ -117,69 +187,351 @@ const ClassManagement: React.FC = () => {
     );
   }
 
-  if (selectedClass) {
-    const classData = classes.find(c => c.id === selectedClass);
+  // Class Detail View
+  if (view.type === 'detail' && view.classId) {
+    const classData = classes.find(c => c.id === view.classId);
+    
     return (
-      <div>
-        <div className="mb-8">
-          <button
-            onClick={() => setSelectedClass(null)}
-            className="text-green-600 hover:text-green-800 mb-4"
-          >
-            ← Back to Classes
-          </button>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">{classData?.name}</h1>
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <span className="text-gray-600">Class Code:</span>
-              <code className="bg-gray-100 px-2 py-1 rounded text-green-600 font-mono">
-                {classData?.code}
-              </code>
-              <button
-                onClick={() => copyClassCode(classData?.code || '')}
-                className="text-green-600 hover:text-green-800"
-              >
-                <Copy className="h-4 w-4" />
-              </button>
-            </div>
+      <div className="flex h-full">
+        {/* Left Sidebar */}
+        <div className="w-64 bg-white shadow-md">
+          <div className="p-4 border-b">
+            <button
+              onClick={backToList}
+              className="flex items-center text-green-600 hover:text-green-800 mb-4"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Classes
+            </button>
+            <h2 className="text-lg font-semibold text-gray-900">{classData?.name}</h2>
+            <p className="text-sm text-gray-600">Code: {classData?.code}</p>
           </div>
+          
+          <nav className="p-4 space-y-2">
+            <button
+              onClick={() => setView({ ...view, activeTab: 'overview' })}
+              className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
+                view.activeTab === 'overview' ? 'bg-green-100 text-green-700' : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <BarChart3 className="h-5 w-5" />
+              <span>Overview</span>
+            </button>
+            
+            <button
+              onClick={() => setView({ ...view, activeTab: 'lessons' })}
+              className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
+                view.activeTab === 'lessons' ? 'bg-green-100 text-green-700' : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <Upload className="h-5 w-5" />
+              <span>Upload Lessons</span>
+            </button>
+            
+            <button
+              onClick={() => setView({ ...view, activeTab: 'assignments' })}
+              className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
+                view.activeTab === 'assignments' ? 'bg-green-100 text-green-700' : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <FileText className="h-5 w-5" />
+              <span>Assignments</span>
+            </button>
+            
+            <button
+              onClick={() => setView({ ...view, activeTab: 'messages' })}
+              className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
+                view.activeTab === 'messages' ? 'bg-green-100 text-green-700' : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <MessageSquare className="h-5 w-5" />
+              <span>Send Message</span>
+            </button>
+            
+            <button
+              onClick={() => setView({ ...view, activeTab: 'submissions' })}
+              className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
+                view.activeTab === 'submissions' ? 'bg-green-100 text-green-700' : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <FileText className="h-5 w-5" />
+              <span>Review Submissions</span>
+            </button>
+          </nav>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="px-6 py-4 bg-gray-50 border-b">
-            <div className="flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-gray-900">Class Roster</h2>
-              <span className="text-sm text-gray-600">{students.length} students</span>
-            </div>
-          </div>
+        {/* Main Content */}
+        <div className="flex-1 p-8 overflow-y-auto">
+          {view.activeTab === 'overview' && (
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-6">Class Overview</h1>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="bg-blue-50 rounded-lg p-6">
+                  <div className="text-2xl font-bold text-blue-600">{students.length}</div>
+                  <div className="text-sm text-blue-800">Total Students</div>
+                </div>
+                <div className="bg-green-50 rounded-lg p-6">
+                  <div className="text-2xl font-bold text-green-600">{assignments.length}</div>
+                  <div className="text-sm text-green-800">Assignments</div>
+                </div>
+                <div className="bg-purple-50 rounded-lg p-6">
+                  <div className="text-2xl font-bold text-purple-600">0</div>
+                  <div className="text-sm text-purple-800">Lessons</div>
+                </div>
+              </div>
 
-          <div className="divide-y divide-gray-200">
-            {students.map((student) => (
-              <div key={student.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-medium text-gray-900">{student.profiles?.name}</h3>
-                    <p className="text-sm text-gray-500">Student ID: {student.student_id}</p>
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Student Roster</h2>
+                <div className="space-y-3">
+                  {students.map((student) => (
+                    <div key={student.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                      <div>
+                        <h3 className="font-medium text-gray-900">{student.profiles?.name}</h3>
+                        <p className="text-sm text-gray-500">Joined {new Date(student.enrolled_at).toLocaleDateString()}</p>
+                      </div>
+                      <button className="text-green-600 hover:text-green-800 text-sm">
+                        View Progress
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {view.activeTab === 'lessons' && (
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-6">Upload Lessons</h1>
+              
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-green-500 transition-colors cursor-pointer">
+                    <Play className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Interactive Videos</h3>
+                    <p className="text-gray-600 text-sm">Upload video lessons with interactive elements</p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm text-gray-600">
-                      Joined {new Date(student.enrolled_at).toLocaleDateString()}
-                    </p>
+                  
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-green-500 transition-colors cursor-pointer">
+                    <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Quizzes</h3>
+                    <p className="text-gray-600 text-sm">Create interactive quizzes and assessments</p>
+                  </div>
+                  
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-green-500 transition-colors cursor-pointer">
+                    <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Downloadable Content</h3>
+                    <p className="text-gray-600 text-sm">Upload PDFs, worksheets, and resources</p>
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          )}
+
+          {view.activeTab === 'assignments' && (
+            <div>
+              <div className="flex justify-between items-center mb-6">
+                <h1 className="text-3xl font-bold text-gray-900">Assignments</h1>
+                <button
+                  onClick={() => setView({ ...view, activeTab: 'create-assignment' })}
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Create Assignment</span>
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                {assignments.map((assignment) => (
+                  <div key={assignment.id} className="bg-white rounded-lg shadow-md p-6">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">{assignment.title}</h3>
+                        <p className="text-gray-600 mt-1">{assignment.description}</p>
+                        <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                          <span>Due: {new Date(assignment.due_date).toLocaleDateString()}</span>
+                          <span>Max Score: {assignment.max_score}</span>
+                          <span>Submissions: {assignment.submissions?.length || 0}</span>
+                        </div>
+                      </div>
+                      <button className="text-green-600 hover:text-green-800 text-sm font-medium">
+                        View Submissions
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {view.activeTab === 'create-assignment' && (
+            <div>
+              <div className="flex items-center mb-6">
+                <button
+                  onClick={() => setView({ ...view, activeTab: 'assignments' })}
+                  className="text-green-600 hover:text-green-800 mr-4"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </button>
+                <h1 className="text-3xl font-bold text-gray-900">Create Assignment</h1>
+              </div>
+              
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Assignment Title *
+                    </label>
+                    <input
+                      type="text"
+                      value={assignmentForm.title}
+                      onChange={(e) => setAssignmentForm({ ...assignmentForm, title: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      placeholder="Enter assignment title"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Description
+                    </label>
+                    <input
+                      type="text"
+                      value={assignmentForm.description}
+                      onChange={(e) => setAssignmentForm({ ...assignmentForm, description: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      placeholder="Brief description"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Instructions
+                    </label>
+                    <textarea
+                      value={assignmentForm.instructions}
+                      onChange={(e) => setAssignmentForm({ ...assignmentForm, instructions: e.target.value })}
+                      rows={4}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      placeholder="Detailed instructions for students"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Due Date *
+                      </label>
+                      <input
+                        type="date"
+                        value={assignmentForm.dueDate}
+                        onChange={(e) => setAssignmentForm({ ...assignmentForm, dueDate: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Maximum Score
+                      </label>
+                      <input
+                        type="number"
+                        value={assignmentForm.maxScore}
+                        onChange={(e) => setAssignmentForm({ ...assignmentForm, maxScore: parseInt(e.target.value) })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                        min="1"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="flex space-x-4">
+                    <button
+                      onClick={() => setView({ ...view, activeTab: 'assignments' })}
+                      className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={createAssignment}
+                      className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                      Create Assignment
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {view.activeTab === 'messages' && (
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-6">Send Message</h1>
+              
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Recipients
+                    </label>
+                    <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                      <option>All Students</option>
+                      <option>All Parents</option>
+                      <option>Individual Student</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Subject
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      placeholder="Message subject"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Message
+                    </label>
+                    <textarea
+                      rows={6}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      placeholder="Type your message here..."
+                    />
+                  </div>
+                  
+                  <button className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                    Send Message
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {view.activeTab === 'submissions' && (
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-6">Review Submissions</h1>
+              
+              <div className="text-center py-12">
+                <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No submissions to review</h3>
+                <p className="text-gray-600">Student submissions will appear here when assignments are completed</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
   }
 
+  // Class List View
   return (
     <div>
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Class Management</h1>
-        <p className="text-gray-600">Manage your classes and view student rosters</p>
+        <p className="text-gray-600">Manage your classes and track student progress</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -222,7 +574,7 @@ const ClassManagement: React.FC = () => {
               onClick={() => handleClassClick(classItem.id)}
               className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors"
             >
-              View Class
+              Manage Class
             </button>
           </div>
         ))}
