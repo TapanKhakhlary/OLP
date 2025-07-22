@@ -16,3 +16,5 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Missing Supabase environment variables. Using placeholder values.');
   console.warn('Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file');
 }
+
+export const supabase = createClient<Database>(finalUrl, finalKey);
