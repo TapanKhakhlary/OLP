@@ -8,6 +8,7 @@ interface AuthContextType {
   signup: (name: string, email: string, password: string, role: UserRole, classCode?: string, parentCode?: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
+  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -23,23 +24,47 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   React.useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        fetchUserProfile(session.user.id);
-      } else {
+    const initializeAuth = async () => {
+      try {
+        // Get initial session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          setError(sessionError.message);
+          setLoading(false);
+          return;
+        }
+
+        if (session?.user) {
+          await fetchUserProfile(session.user.id);
+        } else {
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        setError('Failed to initialize authentication');
         setLoading(false);
       }
-    });
+    };
 
-    // Listen for auth changes
+    initializeAuth();
+
+    // Listen for auth changes with error handling
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        await fetchUserProfile(session.user.id);
-      } else {
-        setUser(null);
+      try {
+        if (session?.user) {
+          await fetchUserProfile(session.user.id);
+        } else {
+          setUser(null);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Auth state change error:', error);
+        setError('Authentication state change failed');
         setLoading(false);
       }
     });
@@ -49,13 +74,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchUserProfile = async (userId: string) => {
     try {
+      setError(null);
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Profile fetch error:', error);
+        setError('Failed to fetch user profile');
+        setLoading(false);
+        return;
+      }
 
       if (profile) {
         setUser({
@@ -68,20 +99,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (error) {
       console.error('Error fetching user profile:', error);
+      setError('Failed to load user profile');
     } finally {
       setLoading(false);
     }
   };
 
   const login = useCallback(async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      setError(null);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (error) throw error;
-    
-    // User profile will be fetched automatically by the auth state change listener
+      if (error) throw error;
+      // User profile will be fetched automatically by the auth state change listener
+    } catch (error: any) {
+      console.error('Login error:', error);
+      setError(error.message || 'Login failed');
+      throw error;
+    }
+
   }, []);
 
   const signup = useCallback(async (
@@ -91,35 +130,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     role: UserRole,
     parentCode?: string
   ) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
+    try {
+      setError(null);
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
 
-    if (error) throw error;
+      if (error) throw error;
 
-    if (data.user) {
-      // Create user profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: data.user.id,
-          name,
-          role,
-        });
+      if (data.user) {
+        // Create user profile
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: data.user.id,
+            name,
+            role,
+          });
 
-      if (profileError) throw profileError;
+        if (profileError) throw profileError;
 
-      // Handle role-specific logic
-      if (role === 'parent' && parentCode) {
-        await linkToChild(data.user.id, parentCode);
+        // Handle role-specific logic
+        if (role === 'parent' && parentCode) {
+          await linkToChild(data.user.id, parentCode);
+        }
+
+        // User profile will be fetched automatically by the auth state change listener
       }
-
-      // User profile will be fetched automatically by the auth state change listener
+    } catch (error: any) {
+      console.error('Signup error:', error);
+      setError(error.message || 'Signup failed');
+      throw error;
     }
+
   }, []);
 
   const logout = useCallback(() => {
+    setError(null);
     supabase.auth.signOut();
   }, []);
 
@@ -155,13 +203,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+          {error && (
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg max-w-md mx-auto">
+              <p className="text-red-800 text-sm">{error}</p>
+              <button 
+                onClick={() => window.location.reload()} 
+                className="mt-2 text-red-600 hover:text-red-800 text-sm underline"
+              >
+                Reload Page
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, signup, logout, isAuthenticated }}>
+    <AuthContext.Provider value={{ user, login, signup, logout, isAuthenticated, loading }}>
       {children}
     </AuthContext.Provider>
   );
