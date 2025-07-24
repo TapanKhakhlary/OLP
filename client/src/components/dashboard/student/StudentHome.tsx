@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BookOpen, Calendar, Users, Clock } from 'lucide-react';
-import { supabase } from '../../../lib/supabase';
+import { apiRequest } from '../../../lib/supabase';
 import { useAuth } from '../../../contexts/AuthContext';
 
 const StudentHome: React.FC = () => {

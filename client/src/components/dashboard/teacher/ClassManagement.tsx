@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Users, Copy, Settings, Upload, MessageSquare, FileText, Play, BarChart3, ArrowLeft } from 'lucide-react';
-import { supabase } from '../../../lib/supabase';
+import { apiRequest } from '../../../lib/supabase';
 import { useAuth } from '../../../contexts/AuthContext';
 
 interface ClassView {

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useState, useEffect } from 'react';
 import { BookOpen, Clock, CheckCircle, Heart } from 'lucide-react';
-import { supabase } from '../../../lib/supabase';
+import { apiRequest } from '../../../lib/supabase';
 import { useAuth } from '../../../contexts/AuthContext';
 
 const MyLibrary: React.FC = () => {

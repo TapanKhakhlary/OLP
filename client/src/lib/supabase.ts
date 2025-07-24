@@ -1,21 +1,41 @@
-import { createClient } from '@supabase/supabase-js';
-import { Database } from './database.types';
+// API client for backend communication
+const API_BASE = '/api';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+export const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
+  const response = await fetch(`${API_BASE}${endpoint}`, {
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+    ...options,
+  });
 
-// Fallback values for development
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: 'Network error' }));
+    throw new Error(error.message || `HTTP ${response.status}`);
+  }
 
-VITE_SUPABASE_URL="https://bddfiuquirpuuotjsgko.supabase.co"
-VITE_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkZGZpdXF1aXJwdXVvdGpzZ2tvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NTQxNzMsImV4cCI6MjA2ODQzMDE3M30.Wjyp9lf0PpyNWiMbhw9Mx4b6svNl8xlydVpystDApiU"
+  return response.json();
+};
 
+export const authAPI = {
+  signup: (data: { name: string; email: string; password: string; role: string }) =>
+    apiRequest('/auth/signup', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 
-const finalUrl = supabaseUrl || defaultUrl;
-const finalKey = supabaseAnonKey || defaultKey;
+  login: (data: { email: string; password: string }) =>
+    apiRequest('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 
-// Only warn about missing env vars, don't throw error
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Using fallback Supabase configuration');
-}
+  logout: () =>
+    apiRequest('/auth/logout', {
+      method: 'POST',
+    }),
 
-export const supabase = createClient<Database>(finalUrl, finalKey);
+  getMe: () => apiRequest('/auth/me'),
+};
