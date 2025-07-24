@@ -135,7 +135,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Only teachers can create classes" });
       }
 
-      const validatedData = insertClassSchema.parse({
+      const validatedData = insertClassSchema.omit({ code: true }).parse({
         ...req.body,
         teacherId: req.user!.id
       });

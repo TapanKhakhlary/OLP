@@ -12,6 +12,7 @@ import {
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
 import bcrypt from "bcrypt";
+import crypto from "crypto";
 
 // Storage interface with all CRUD methods needed for the LitPlatform
 export interface IStorage {
@@ -153,8 +154,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createClass(classData: InsertClass): Promise<Class> {
+    // Generate a unique class code
+    const generateClassCode = (): string => {
+      return Math.random().toString(36).substring(2, 8).toUpperCase();
+    };
+    
+    let classCode = generateClassCode();
+    // Ensure the code is unique
+    let existingClass = await this.getClassByCode(classCode);
+    while (existingClass) {
+      classCode = generateClassCode();
+      existingClass = await this.getClassByCode(classCode);
+    }
+    
     const newClass = await db.insert(classes).values({
       ...classData,
+      code: classCode,
       id: crypto.randomUUID(),
     }).returning();
     return newClass[0];
