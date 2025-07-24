@@ -120,6 +120,7 @@ export const messagesAPI = {
   async createAnnouncement(announcementData: {
     content: string;
     classId: string;
+    type?: string;
   }) {
     return apiRequest('/announcements', {
       method: 'POST',

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { BookOpen, Calendar, TrendingUp, Award, Star, Home, CheckSquare, Settings, UserPlus } from 'lucide-react';
+import { BookOpen, Calendar, TrendingUp, Award, Star, Home, CheckSquare, Settings, UserPlus, Users, Bell } from 'lucide-react';
 import DashboardSidebar from '../DashboardSidebar';
 import StudentHome from './StudentHome';
 import MyLibrary from './MyLibrary';
-import Assignments from './Assignments';
+import StudentAssignments from './StudentAssignments';
 import Progress from './Progress';
 import MarksResults from './MarksResults';
 import Achievements from './Achievements';
@@ -11,6 +11,7 @@ import JoinClass from './JoinClass';
 import StudentClassView from './StudentClassView';
 import TodoList from './TodoList';
 import StudentSettings from './StudentSettings';
+import StudentAnnouncements from './StudentAnnouncements';
 
 const StudentDashboard: React.FC = () => {
   const [activeView, setActiveView] = useState('home');
@@ -25,6 +26,7 @@ const StudentDashboard: React.FC = () => {
     { id: 'achievements', label: 'Achievements', icon: Award },
     { id: 'classes', label: 'My Classes', icon: Users },
     { id: 'join-class', label: 'Join Class', icon: UserPlus },
+    { id: 'announcements', label: 'Announcements', icon: Bell },
     { id: 'settings', label: 'Settings', icon: Settings }
   ];
 
@@ -35,7 +37,7 @@ const StudentDashboard: React.FC = () => {
       case 'library':
         return <MyLibrary />;
       case 'assignments':
-        return <Assignments />;
+        return <StudentAssignments />;
       case 'todo':
         return <TodoList />;
       case 'progress':
@@ -48,6 +50,8 @@ const StudentDashboard: React.FC = () => {
         return <StudentClassView />;
       case 'join-class':
         return <JoinClass />;
+      case 'announcements':
+        return <StudentAnnouncements />;
       case 'settings':
         return <StudentSettings />;
       default:

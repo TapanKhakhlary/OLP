@@ -198,7 +198,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Only teachers can create announcements" });
       }
 
-      const { content, classId } = req.body;
+      const { content, classId, type = 'announcement' } = req.body;
       if (!content || !classId) {
         return res.status(400).json({ message: "Content and class ID are required" });
       }
@@ -212,8 +212,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const announcement = await storage.createMessage({
         senderId: req.user!.id,
         recipientId: null, // Announcement to all students in class
-        content,
-        classId
+        content
       });
       
       res.status(201).json(announcement);
@@ -238,7 +237,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const classIds = enrollments.map(e => e.classId!);
         const allMessages = await storage.getAllMessages();
         announcements = allMessages.filter(m => 
-          m.classId && classIds.includes(m.classId) && !m.recipientId
+          !m.recipientId // Announcements have no specific recipient
         );
       } else if (req.user!.role === 'parent') {
         // Parents see announcements for their children's classes

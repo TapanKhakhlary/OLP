@@ -6,6 +6,7 @@ import GoogleClassroomInterface from './GoogleClassroomInterface';
 import Library from './Library';
 import MessageCenter from './MessageCenter';
 import TeacherSettings from './TeacherSettings';
+import AnnouncementCenter from './AnnouncementCenter';
 
 const TeacherDashboard: React.FC = () => {
   const [activeView, setActiveView] = useState('home');
@@ -14,7 +15,7 @@ const TeacherDashboard: React.FC = () => {
     { id: 'home', label: 'Home', icon: Home },
     { id: 'classes', label: 'Class Management', icon: Users },
     { id: 'library', label: 'Library', icon: BookOpen },
-    { id: 'messages', label: 'Message Center', icon: MessageSquare },
+    { id: 'announcements', label: 'Announcements', icon: MessageSquare },
     { id: 'settings', label: 'Settings', icon: Settings }
   ];
 
@@ -26,8 +27,8 @@ const TeacherDashboard: React.FC = () => {
         return <GoogleClassroomInterface />;
       case 'library':
         return <Library />;
-      case 'messages':
-        return <MessageCenter />;
+      case 'announcements':
+        return <AnnouncementCenter />;
       case 'settings':
         return <TeacherSettings />;
       default:
