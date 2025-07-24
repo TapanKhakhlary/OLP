@@ -77,11 +77,15 @@ export interface IStorage {
   getMessage(id: string): Promise<Message | undefined>;
   getMessagesBetweenUsers(senderId: string, recipientId: string): Promise<Message[]>;
   getUserMessages(userId: string): Promise<Message[]>;
+  getMessagesBySender(senderId: string): Promise<Message[]>;
+  getAllMessages(): Promise<Message[]>;
   createMessage(message: InsertMessage): Promise<Message>;
   markMessageAsRead(id: string): Promise<boolean>;
   
   // Class Enrollment methods
   enrollStudent(enrollment: InsertClassEnrollment): Promise<ClassEnrollment>;
+  createClassEnrollment(enrollment: InsertClassEnrollment): Promise<ClassEnrollment>;
+  getClassEnrollment(classId: string, studentId: string): Promise<ClassEnrollment | undefined>;
   getStudentEnrollments(studentId: string): Promise<ClassEnrollment[]>;
   getClassEnrollments(classId: string): Promise<ClassEnrollment[]>;
   unenrollStudent(classId: string, studentId: string): Promise<boolean>;
@@ -393,6 +397,14 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
+  async getMessagesBySender(senderId: string): Promise<Message[]> {
+    return await db.select().from(messages).where(eq(messages.senderId, senderId));
+  }
+
+  async getAllMessages(): Promise<Message[]> {
+    return await db.select().from(messages);
+  }
+
   // Class Enrollment methods
   async enrollStudent(enrollment: InsertClassEnrollment): Promise<ClassEnrollment> {
     const newEnrollment = await db.insert(classEnrollments).values({
@@ -400,6 +412,17 @@ export class DatabaseStorage implements IStorage {
       id: crypto.randomUUID(),
     }).returning();
     return newEnrollment[0];
+  }
+
+  async createClassEnrollment(enrollment: InsertClassEnrollment): Promise<ClassEnrollment> {
+    return this.enrollStudent(enrollment);
+  }
+
+  async getClassEnrollment(classId: string, studentId: string): Promise<ClassEnrollment | undefined> {
+    const enrollment = await db.select().from(classEnrollments)
+      .where(and(eq(classEnrollments.classId, classId), eq(classEnrollments.studentId, studentId)))
+      .limit(1);
+    return enrollment[0];
   }
 
   async getStudentEnrollments(studentId: string): Promise<ClassEnrollment[]> {
@@ -511,6 +534,10 @@ export class MemStorage implements IStorage {
   async linkParentChild(): Promise<ParentChildLink> { throw new Error("Not implemented in MemStorage"); }
   async getParentChildren(): Promise<ParentChildLink[]> { throw new Error("Not implemented in MemStorage"); }
   async getChildParents(): Promise<ParentChildLink[]> { throw new Error("Not implemented in MemStorage"); }
+  async getMessagesBySender(): Promise<Message[]> { throw new Error("Not implemented in MemStorage"); }
+  async getAllMessages(): Promise<Message[]> { throw new Error("Not implemented in MemStorage"); }
+  async createClassEnrollment(): Promise<ClassEnrollment> { throw new Error("Not implemented in MemStorage"); }
+  async getClassEnrollment(): Promise<ClassEnrollment | undefined> { throw new Error("Not implemented in MemStorage"); }
 }
 
 export const storage = new DatabaseStorage();

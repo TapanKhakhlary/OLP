@@ -11,7 +11,7 @@ declare global {
       user?: User;
     }
     interface Session {
-      userId?: string;
+      userId: string;
     }
   }
 }
@@ -109,7 +109,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/classes", authenticateUser, async (req: Request, res: Response) => {
     try {
       const user = req.user!;
-      let classes;
+      let classes: any[];
       
       if (user.role === 'teacher') {
         classes = await storage.getClassesByTeacher(user.id);
@@ -135,9 +135,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Only teachers can create classes" });
       }
 
-      const validatedData = insertClassSchema.omit({ code: true }).parse({
+      const validatedData = insertClassSchema.parse({
         ...req.body,
-        teacherId: req.user!.id
+        teacherId: req.user!.id,
+        code: 'temp' // This will be overridden by createClass
       });
       
       const newClass = await storage.createClass(validatedData);
@@ -225,7 +226,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/announcements", authenticateUser, async (req: Request, res: Response) => {
     try {
       const { classId } = req.query;
-      let announcements;
+      let announcements: any[];
       
       if (req.user!.role === 'teacher') {
         announcements = await storage.getMessagesBySender(req.user!.id);
@@ -269,7 +270,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/assignments", authenticateUser, async (req: Request, res: Response) => {
     try {
       const user = req.user!;
-      let assignments;
+      let assignments: any[];
       
       if (user.role === 'teacher') {
         assignments = await storage.getAssignmentsByTeacher(user.id);
@@ -316,7 +317,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/submissions", authenticateUser, async (req: Request, res: Response) => {
     try {
       const user = req.user!;
-      let submissions;
+      let submissions: any[];
       
       if (user.role === 'student') {
         submissions = await storage.getSubmissionsByStudent(user.id);

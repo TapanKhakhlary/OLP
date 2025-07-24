@@ -1,127 +1,96 @@
 # LitPlatform - Educational Reading Platform
 
-## Overview
+## Project Overview
+LitPlatform is a comprehensive educational reading platform designed for teachers, students, and parents. The platform facilitates classroom management, reading assignments, progress tracking, and achievement systems.
 
-LitPlatform is a comprehensive educational reading platform designed to connect students, teachers, and parents in a collaborative learning environment. The application is built as a full-stack web application with a React frontend and Express.js backend, using PostgreSQL for data persistence and featuring role-based dashboards for different user types.
+**Current Status**: Successfully migrated from Supabase to Replit's PostgreSQL environment with Drizzle ORM.
 
-## User Preferences
+## Architecture
 
-Preferred communication style: Simple, everyday language.
+### Backend (Node.js + Express)
+- **Server**: Express.js application with session-based authentication
+- **Database**: PostgreSQL with Drizzle ORM
+- **Storage**: DatabaseStorage implementation for all CRUD operations
+- **Routes**: RESTful API endpoints for all platform functionality
 
-## System Architecture
-
-### Frontend Architecture
-- **Framework**: React 18 with TypeScript
-- **Styling**: Tailwind CSS with shadcn/ui component library
-- **State Management**: React Context API for authentication and global state
-- **Build Tool**: Vite for development and production builds
-- **UI Components**: Radix UI primitives with custom theming
-
-### Backend Architecture
-- **Runtime**: Node.js with Express.js framework
-- **Language**: TypeScript with ES modules
-- **Session Management**: Express sessions with PostgreSQL storage
-- **API Design**: RESTful endpoints with role-based access control
-- **Development**: Hot reload with Vite middleware integration
-
-### Database Architecture
-- **Database**: PostgreSQL with Neon serverless driver
-- **ORM**: Drizzle ORM for type-safe database operations
-- **Schema Management**: Drizzle Kit for migrations and schema management
-- **Connection**: Connection pooling with websocket support for serverless environments
-
-## Key Components
-
-### Authentication System
-- Session-based authentication with secure HTTP-only cookies
-- Role-based access control (student, teacher, parent)
-- Password hashing with bcrypt
-- User registration with role-specific onboarding flows
-
-### User Roles & Dashboards
-- **Students**: Access library, complete assignments, track progress, join classes
-- **Teachers**: Manage classes, create assignments, view student progress, communicate with parents
-- **Parents**: Monitor child's progress, view results, communicate with teachers
+### Frontend (React + Vite)
+- **Framework**: React with TypeScript
+- **Styling**: Tailwind CSS with shadcn/ui components
+- **State Management**: TanStack Query for server state
+- **Routing**: Wouter for client-side routing
+- **Authentication**: Custom AuthContext with session-based auth
 
 ### Database Schema
-Core entities include:
-- **Profiles**: User accounts with role-based permissions
-- **Classes**: Teacher-managed learning groups with unique join codes
-- **Books**: Digital library with metadata and reading levels
-- **Assignments**: Teacher-created tasks with due dates and grading
-- **Submissions**: Student work with file uploads and status tracking
-- **Reading Progress**: Individual book progress and status
-- **Achievements**: Gamification system for student engagement
+- **profiles**: User accounts (students, teachers, parents)
+- **classes**: Teacher-created classrooms with unique codes
+- **books**: Available reading materials with metadata
+- **assignments**: Teacher-created reading assignments
+- **submissions**: Student assignment submissions and grading
+- **achievements**: Gamification system with different rarities
+- **user_achievements**: Tracking of user-earned achievements
+- **reading_progress**: Student reading progress tracking
+- **messages**: Communication system (announcements, messaging)
+- **class_enrollments**: Student-class relationships
+- **parent_child_links**: Parent-child account connections
 
-### File Upload System
-- Support for multiple file formats (PDF, DOC, images)
-- Drag-and-drop interface with progress indicators
-- File validation and size limits
+## Key Features
 
-## Data Flow
+### For Teachers
+- Create and manage classes with unique join codes
+- Assign reading materials and track student progress
+- Grade assignments and provide feedback
+- Send announcements to students and parents
 
-### Authentication Flow
-1. User registers with role selection and validation
-2. Session created with secure cookie storage
-3. Role-based dashboard routing and component rendering
-4. Middleware validates authentication on protected routes
+### For Students
+- Join classes using class codes
+- Access assigned readings and submit work
+- Track reading progress and earn achievements
+- View grades and teacher feedback
 
-### Class Management Flow
-1. Teachers create classes with auto-generated codes
-2. Students join classes using codes
-3. Parents link to children's accounts for monitoring
-4. Real-time enrollment and progress tracking
+### For Parents
+- Link to children's accounts
+- Monitor child's reading progress
+- Receive announcements from teachers
 
-### Assignment Workflow
-1. Teachers create assignments with books and due dates
-2. Students receive assignments in their dashboard
-3. File submissions with status tracking
-4. Teacher grading and feedback system
-5. Parent notifications of results
+## Recent Changes (Migration from Supabase to Replit PostgreSQL)
+- **Database Migration**: Ported Supabase schema to Drizzle with PostgreSQL
+- **Authentication**: Replaced Supabase Auth with session-based authentication
+- **API Layer**: Implemented Express routes replacing Supabase Edge Functions
+- **Client Updates**: Updated frontend to use custom API client instead of Supabase client
+- **Security**: Implemented proper server-side security and validation
+- **Sample Data**: Populated database with books and achievements
 
-## External Dependencies
+## Development Guidelines
 
-### Core Dependencies
-- **@neondatabase/serverless**: PostgreSQL driver for serverless environments
-- **drizzle-orm**: Type-safe ORM for database operations
-- **express-session**: Session management middleware
-- **bcrypt**: Password hashing and validation
-- **zod**: Runtime type validation and schema parsing
+### Running the Project
+```bash
+npm run dev  # Starts both frontend and backend
+npm run db:push  # Pushes schema changes to database
+```
 
-### UI Dependencies
-- **@radix-ui/react-***: Accessible UI component primitives
-- **@tanstack/react-query**: Server state management and caching
-- **tailwindcss**: Utility-first CSS framework
-- **lucide-react**: Icon library for consistent UI elements
+### Key Files
+- `shared/schema.ts`: Database schema and types (source of truth)
+- `server/storage.ts`: Database operations interface and implementation
+- `server/routes.ts`: API routes and authentication
+- `client/src/contexts/AuthContext.tsx`: Authentication context
+- `client/src/lib/api.ts`: API client for frontend-backend communication
 
-### Development Dependencies
-- **vite**: Fast build tool and development server
-- **typescript**: Type safety and developer experience
-- **drizzle-kit**: Database schema management and migrations
+### Architecture Decisions
+- **Client/Server Separation**: Backend handles all data operations and authentication
+- **Type Safety**: Shared schema ensures consistency between frontend and backend
+- **Security**: Session-based authentication with proper CSRF protection
+- **Database**: PostgreSQL with Drizzle for type-safe database operations
 
-## Deployment Strategy
+## User Preferences
+- Language: English
+- Communication Style: Clear, technical explanations when needed
+- Code Style: TypeScript with proper type safety, consistent formatting
 
-### Development Environment
-- Vite development server with hot module replacement
-- Express middleware integration for API routes
-- Environment-based configuration with fallbacks
-- Replit-specific plugins for cloud development
+## Deployment Status
+The application is running successfully on Replit with:
+- PostgreSQL database properly configured
+- All API endpoints functional
+- Frontend connecting correctly to backend
+- Sample data populated for testing
 
-### Production Build
-- Frontend: Vite builds static assets to `dist/public`
-- Backend: ESBuild bundles server code to `dist/index.js`
-- Database: Migration system ensures schema consistency
-- Environment variables for database and session configuration
-
-### Database Provisioning
-- Requires `DATABASE_URL` environment variable
-- Automatic connection pooling and websocket configuration
-- Schema migrations handled through Drizzle Kit
-- Support for both development and production database environments
-
-### Security Considerations
-- Session secrets configurable via environment variables
-- Password hashing with industry-standard algorithms
-- CSRF protection through session validation
-- Role-based access control on all API endpoints
-- Secure cookie configuration for production environments
+Ready for continued development and feature additions.
