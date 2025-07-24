@@ -36,29 +36,35 @@ LitPlatform is a comprehensive educational reading platform designed for teacher
 ## Key Features
 
 ### For Teachers
-- Create and manage classes with unique join codes
-- Assign reading materials and track student progress
-- Grade assignments and provide feedback
-- Send announcements to students and parents
+- **Google Classroom-style Interface**: Create classes with unique 6-character codes
+- **Assignment Manager**: Create, distribute and manage assignments to class students
+- **Announcement Center**: Send announcements to students and parents (no incoming messages)
+- **Class Management**: View enrolled students, track class progress
+- **Library Integration**: Access books and assign reading materials
 
 ### For Students
-- Join classes using class codes
-- Access assigned readings and submit work
-- Track reading progress and earn achievements
-- View grades and teacher feedback
+- **Class Joining**: Join teacher classes using unique class codes
+- **Assignment Dashboard**: View, complete and submit assignments with due dates
+- **Progress Tracking**: Monitor reading progress and achievements
+- **Announcement Feed**: Receive important updates from teachers
+- **Interactive Library**: Access assigned books and reading materials
 
 ### For Parents
-- Link to children's accounts
-- Monitor child's reading progress
-- Receive announcements from teachers
+- **Child Linking System**: Link to children's accounts for monitoring
+- **Comprehensive Progress View**: Detailed tracking of child's academic journey
+- **Weekly Activity Charts**: Visual representation of reading habits
+- **Achievement Monitoring**: Track earned badges and milestones
+- **Announcement Reception**: Receive class updates from teachers
+- **Grade Tracking**: Monitor assignment scores and teacher feedback
 
-## Recent Changes (Migration from Supabase to Replit PostgreSQL)
-- **Database Migration**: Ported Supabase schema to Drizzle with PostgreSQL
-- **Authentication**: Replaced Supabase Auth with session-based authentication
-- **API Layer**: Implemented Express routes replacing Supabase Edge Functions
-- **Client Updates**: Updated frontend to use custom API client instead of Supabase client
-- **Security**: Implemented proper server-side security and validation
-- **Sample Data**: Populated database with books and achievements
+## Recent Changes (July 2025 - Comprehensive Educational Platform Implementation)
+- **Google Classroom-like Features**: Implemented class creation with unique codes, student enrollment system
+- **Announcement System**: Replaced messaging with teacher-to-student/parent announcements only
+- **Assignment Distribution**: Created comprehensive assignment management for teachers and students
+- **Parent Progress Tracking**: Built detailed child monitoring with reading progress, grades, achievements
+- **Dashboard Integration**: Connected all three user dashboards with full interoperability
+- **Authentication System**: Fixed role-based access and session management
+- **Database Schema**: Enhanced with class enrollments, parent-child links, comprehensive assignments
 
 ## Development Guidelines
 

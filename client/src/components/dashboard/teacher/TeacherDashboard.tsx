@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, BookOpen, MessageSquare, Home, Settings } from 'lucide-react';
+import { Users, BookOpen, MessageSquare, Home, Settings, Calendar } from 'lucide-react';
 import DashboardSidebar from '../DashboardSidebar';
 import TeacherHome from './TeacherHome';
 import GoogleClassroomInterface from './GoogleClassroomInterface';
@@ -7,6 +7,7 @@ import Library from './Library';
 import MessageCenter from './MessageCenter';
 import TeacherSettings from './TeacherSettings';
 import AnnouncementCenter from './AnnouncementCenter';
+import AssignmentManager from './AssignmentManager';
 
 const TeacherDashboard: React.FC = () => {
   const [activeView, setActiveView] = useState('home');
@@ -14,6 +15,7 @@ const TeacherDashboard: React.FC = () => {
   const sidebarItems = [
     { id: 'home', label: 'Home', icon: Home },
     { id: 'classes', label: 'Class Management', icon: Users },
+    { id: 'assignments', label: 'Assignments', icon: Calendar },
     { id: 'library', label: 'Library', icon: BookOpen },
     { id: 'announcements', label: 'Announcements', icon: MessageSquare },
     { id: 'settings', label: 'Settings', icon: Settings }
@@ -27,6 +29,8 @@ const TeacherDashboard: React.FC = () => {
         return <GoogleClassroomInterface />;
       case 'library':
         return <Library />;
+      case 'assignments':
+        return <AssignmentManager />;
       case 'announcements':
         return <AnnouncementCenter />;
       case 'settings':

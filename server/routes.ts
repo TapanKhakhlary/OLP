@@ -49,6 +49,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid input", errors: error.errors });
       }
+      if (error.code === '23505') {
+        return res.status(400).json({ message: "User with this email already exists" });
+      }
       res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -155,7 +158,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Join class route with proper implementation
   app.post("/api/classes/join", authenticateUser, async (req: Request, res: Response) => {
     try {
+      console.log("User attempting to join class:", req.user);
       if (req.user!.role !== 'student') {
+        console.log("User role check failed. Role:", req.user!.role);
         return res.status(403).json({ message: "Only students can join classes" });
       }
 
