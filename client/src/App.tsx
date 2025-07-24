@@ -1,5 +1,7 @@
 import React from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from './lib/queryClient';
 import LandingPage from './components/LandingPage';
 import StudentDashboard from './components/dashboard/student/StudentDashboard';
 import TeacherDashboard from './components/dashboard/teacher/TeacherDashboard';
@@ -26,9 +28,11 @@ const AppContent: React.FC = () => {
 
 function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
 

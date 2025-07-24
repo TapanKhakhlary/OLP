@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { authAPI } from '../lib/supabase';
+import { authAPI } from '../lib/api';
 import { User, UserRole } from '../types';
 
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
-  signup: (name: string, email: string, password: string, role: UserRole, classCode?: string, parentCode?: string) => Promise<void>;
+  signup: (name: string, email: string, password: string, role: UserRole, parentCode?: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
   loading: boolean;

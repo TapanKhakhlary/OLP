@@ -5,6 +5,7 @@ import ChildProgress from './ChildProgress';
 import ResultsFeedback from './ResultsFeedback';
 import Messages from './Messages';
 import ParentSettings from './ParentSettings';
+import ParentProgressView from './ParentProgressView';
 
 const ParentDashboard: React.FC = () => {
   const [activeView, setActiveView] = useState('progress');
@@ -19,7 +20,7 @@ const ParentDashboard: React.FC = () => {
   const renderContent = () => {
     switch (activeView) {
       case 'progress':
-        return <ChildProgress />;
+        return <ParentProgressView />;
       case 'results':
         return <ResultsFeedback />;
       case 'messages':

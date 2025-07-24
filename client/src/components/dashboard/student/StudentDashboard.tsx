@@ -8,6 +8,7 @@ import Progress from './Progress';
 import MarksResults from './MarksResults';
 import Achievements from './Achievements';
 import JoinClass from './JoinClass';
+import StudentClassView from './StudentClassView';
 import TodoList from './TodoList';
 import StudentSettings from './StudentSettings';
 
@@ -22,6 +23,7 @@ const StudentDashboard: React.FC = () => {
     { id: 'progress', label: 'Progress', icon: TrendingUp },
     { id: 'marks', label: 'Marks & Results', icon: Star },
     { id: 'achievements', label: 'Achievements', icon: Award },
+    { id: 'classes', label: 'My Classes', icon: Users },
     { id: 'join-class', label: 'Join Class', icon: UserPlus },
     { id: 'settings', label: 'Settings', icon: Settings }
   ];
@@ -42,6 +44,8 @@ const StudentDashboard: React.FC = () => {
         return <MarksResults />;
       case 'achievements':
         return <Achievements />;
+      case 'classes':
+        return <StudentClassView />;
       case 'join-class':
         return <JoinClass />;
       case 'settings':

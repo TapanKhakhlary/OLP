@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Users, Copy, Settings, Upload, MessageSquare, FileText, Play, BarChart3, ArrowLeft } from 'lucide-react';
-import { apiRequest } from '../../../lib/supabase';
+import { Plus, Users, Copy, Settings, Upload, MessageSquare, FileText, Play, BarChart3, ArrowLeft, CheckCircle, BookOpen } from 'lucide-react';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { classesAPI, assignmentsAPI, messagesAPI } from '../../../lib/api';
+import { queryClient } from '../../../lib/queryClient';
 import { useAuth } from '../../../contexts/AuthContext';
 
 interface ClassView {
@@ -11,8 +13,6 @@ interface ClassView {
 
 const ClassManagement: React.FC = () => {
   const { user } = useAuth();
-  const [classes, setClasses] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [view, setView] = useState<ClassView>({ type: 'list' });
   const [students, setStudents] = useState<any[]>([]);
   const [assignments, setAssignments] = useState<any[]>([]);
@@ -28,122 +28,70 @@ const ClassManagement: React.FC = () => {
     maxScore: 100
   });
 
-  useEffect(() => {
-    if (user) {
-      fetchClasses();
-    }
-  }, [user]);
+  // Use React Query for data fetching
+  const { data: teacherClasses = [], isLoading: classesLoading, refetch: refetchClasses } = useQuery({
+    queryKey: ['/classes'],
+    enabled: !!user && user.role === 'teacher',
+  });
 
-  const fetchClasses = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('classes')
-        .select(`
-          *,
-          class_enrollments (
-            id,
-            student_id,
-            profiles (
-              name
-            )
-          )
-        `)
-        .eq('teacher_id', user?.id);
-
-      if (error) throw error;
-
-      const classesWithCounts = data?.map(cls => ({
-        ...cls,
-        students: cls.class_enrollments?.length || 0
-      })) || [];
-
-      setClasses(classesWithCounts);
-    } catch (error) {
-      console.error('Error fetching classes:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchClassData = async (classId: string) => {
-    try {
-      // Fetch students
-      const { data: studentsData, error: studentsError } = await supabase
-        .from('class_enrollments')
-        .select(`
-          *,
-          profiles (
-            id,
-            name
-          )
-        `)
-        .eq('class_id', classId);
-
-      if (studentsError) throw studentsError;
-      setStudents(studentsData || []);
-
-      // Fetch assignments
-      const { data: assignmentsData, error: assignmentsError } = await supabase
-        .from('assignments')
-        .select(`
-          *,
-          submissions (
-            id,
-            status,
-            student_id,
-            profiles (name)
-          )
-        `)
-        .eq('class_id', classId)
-        .order('created_at', { ascending: false });
-
-      if (assignmentsError) throw assignmentsError;
-      setAssignments(assignmentsData || []);
-    } catch (error) {
-      console.error('Error fetching class data:', error);
-    }
-  };
-
-  const createClass = async () => {
-    if (!newClassName.trim()) return;
-
-    try {
-      const classCode = generateClassCode();
-      const { error } = await supabase
-        .from('classes')
-        .insert({
-          name: newClassName,
-          code: classCode,
-          teacher_id: user?.id,
-        });
-
-      if (error) throw error;
-
-      setNewClassName('');
+  // Create class mutation
+  const createClassMutation = useMutation({
+    mutationFn: classesAPI.createClass,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/classes'] });
       setShowCreateForm(false);
-      fetchClasses();
-    } catch (error) {
-      console.error('Error creating class:', error);
-    }
+      setNewClassName('');
+    },
+  });
+
+  // Create assignment mutation
+  const createAssignmentMutation = useMutation({
+    mutationFn: assignmentsAPI.createAssignment,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/assignments'] });
+      setAssignmentForm({
+        title: '',
+        description: '',
+        instructions: '',
+        dueDate: '',
+        maxScore: 100
+      });
+    },
+  });
+
+  // Create announcement mutation
+  const createAnnouncementMutation = useMutation({
+    mutationFn: messagesAPI.createAnnouncement,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/announcements'] });
+    },
+  });
+
+  // Get students and assignments for a specific class
+  const { data: classStudents = [] } = useQuery({
+    queryKey: ['/classes', view.classId, 'students'],
+    enabled: !!view.classId,
+  });
+
+  const { data: classAssignments = [] } = useQuery({
+    queryKey: ['/assignments/class', view.classId],
+    enabled: !!view.classId,
+  });
+
+  const handleCreateClass = () => {
+    if (!newClassName.trim()) return;
+    createClassMutation.mutate({ name: newClassName });
   };
 
-  const createAssignment = async () => {
+  const handleCreateAssignment = () => {
     if (!assignmentForm.title.trim() || !view.classId) return;
-
-    try {
-      const { error } = await supabase
-        .from('assignments')
-        .insert({
-          title: assignmentForm.title,
-          description: assignmentForm.description,
-          instructions: assignmentForm.instructions,
-          class_id: view.classId,
-          teacher_id: user?.id,
-          due_date: assignmentForm.dueDate,
-          max_score: assignmentForm.maxScore,
-        });
-
-      if (error) throw error;
+    
+    createAssignmentMutation.mutate({
+      ...assignmentForm,
+      classId: view.classId,
+      dueDate: new Date(assignmentForm.dueDate).toISOString(),
+    });
+  };
 
       setAssignmentForm({
         title: '',

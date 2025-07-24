@@ -1,68 +1,40 @@
 import React, { useState } from 'react';
 import { UserPlus, Users, CheckCircle } from 'lucide-react';
-import { apiRequest } from '../../../lib/supabase';
+import { useMutation } from '@tanstack/react-query';
+import { classesAPI } from '../../../lib/api';
+import { queryClient } from '../../../lib/queryClient';
 import { useAuth } from '../../../contexts/AuthContext';
 
 const JoinClass: React.FC = () => {
   const { user } = useAuth();
   const [classCode, setClassCode] = useState('');
-  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Join class mutation
+  const joinClassMutation = useMutation({
+    mutationFn: classesAPI.joinClass,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/classes'] });
+      setMessage({ 
+        type: 'success', 
+        text: `Successfully joined class!` 
+      });
+      setClassCode('');
+    },
+    onError: (error: any) => {
+      setMessage({ 
+        type: 'error', 
+        text: error.message || 'Failed to join class. Please try again.' 
+      });
+    },
+  });
 
   const handleJoinClass = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!classCode.trim()) return;
 
-    setLoading(true);
     setMessage(null);
-
-    try {
-      // Check if class exists
-      const { data: classData, error: classError } = await supabase
-        .from('classes')
-        .select('id, name, teacher_id, profiles(name)')
-        .eq('code', classCode.toUpperCase())
-        .single();
-
-      if (classError || !classData) {
-        setMessage({ type: 'error', text: 'Invalid class code. Please check and try again.' });
-        return;
-      }
-
-      // Check if already enrolled
-      const { data: existingEnrollment, error: enrollmentCheckError } = await supabase
-        .from('class_enrollments')
-        .select('id')
-        .eq('class_id', classData.id)
-        .eq('student_id', user?.id)
-        .single();
-
-      if (existingEnrollment) {
-        setMessage({ type: 'error', text: 'You are already enrolled in this class.' });
-        return;
-      }
-
-      // Enroll student
-      const { error: enrollError } = await supabase
-        .from('class_enrollments')
-        .insert({
-          class_id: classData.id,
-          student_id: user?.id,
-        });
-
-      if (enrollError) throw enrollError;
-
-      setMessage({ 
-        type: 'success', 
-        text: `Successfully joined "${classData.name}"!` 
-      });
-      setClassCode('');
-    } catch (error) {
-      console.error('Error joining class:', error);
-      setMessage({ type: 'error', text: 'Failed to join class. Please try again.' });
-    } finally {
-      setLoading(false);
-    }
+    joinClassMutation.mutate(classCode.toUpperCase());
   };
 
   return (

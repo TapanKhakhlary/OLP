@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Users, BookOpen, MessageSquare, Home, Settings } from 'lucide-react';
 import DashboardSidebar from '../DashboardSidebar';
 import TeacherHome from './TeacherHome';
-import ClassManagement from './ClassManagement';
+import GoogleClassroomInterface from './GoogleClassroomInterface';
 import Library from './Library';
 import MessageCenter from './MessageCenter';
 import TeacherSettings from './TeacherSettings';
@@ -23,7 +23,7 @@ const TeacherDashboard: React.FC = () => {
       case 'home':
         return <TeacherHome />;
       case 'classes':
-        return <ClassManagement />;
+        return <GoogleClassroomInterface />;
       case 'library':
         return <Library />;
       case 'messages':

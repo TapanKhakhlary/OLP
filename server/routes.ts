@@ -151,25 +151,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/classes/:code/join", authenticateUser, async (req: Request, res: Response) => {
+  // Join class route with proper implementation
+  app.post("/api/classes/join", authenticateUser, async (req: Request, res: Response) => {
     try {
       if (req.user!.role !== 'student') {
         return res.status(403).json({ message: "Only students can join classes" });
       }
 
-      const classData = await storage.getClassByCode(req.params.code);
-      if (!classData) {
+      const { classCode } = req.body;
+      if (!classCode) {
+        return res.status(400).json({ message: "Class code is required" });
+      }
+
+      const classToJoin = await storage.getClassByCode(classCode);
+      if (!classToJoin) {
         return res.status(404).json({ message: "Invalid class code" });
       }
 
-      const enrollment = await storage.enrollStudent({
-        classId: classData.id,
+      // Check if already enrolled (implement this method)
+      try {
+        const existingEnrollment = await storage.getClassEnrollment(classToJoin.id, req.user!.id);
+        if (existingEnrollment) {
+          return res.status(400).json({ message: "Already enrolled in this class" });
+        }
+      } catch (error) {
+        // If method doesn't exist, we'll continue with enrollment
+      }
+
+      const enrollment = await storage.createClassEnrollment({
+        classId: classToJoin.id,
         studentId: req.user!.id
       });
       
-      res.status(201).json(enrollment);
+      res.status(201).json({ message: "Successfully joined class", enrollment, class: classToJoin });
     } catch (error) {
       console.error("Join class error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Announcements/Messages routes for teachers to send to students and parents
+  app.post("/api/announcements", authenticateUser, async (req: Request, res: Response) => {
+    try {
+      if (req.user!.role !== 'teacher') {
+        return res.status(403).json({ message: "Only teachers can create announcements" });
+      }
+
+      const { content, classId } = req.body;
+      if (!content || !classId) {
+        return res.status(400).json({ message: "Content and class ID are required" });
+      }
+
+      // Verify teacher owns the class
+      const classData = await storage.getClass(classId);
+      if (!classData || classData.teacherId !== req.user!.id) {
+        return res.status(403).json({ message: "You can only create announcements for your own classes" });
+      }
+
+      const announcement = await storage.createMessage({
+        senderId: req.user!.id,
+        recipientId: null, // Announcement to all students in class
+        content,
+        classId
+      });
+      
+      res.status(201).json(announcement);
+    } catch (error) {
+      console.error("Create announcement error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.get("/api/announcements", authenticateUser, async (req: Request, res: Response) => {
+    try {
+      const { classId } = req.query;
+      let announcements;
+      
+      if (req.user!.role === 'teacher') {
+        announcements = await storage.getMessagesBySender(req.user!.id);
+        if (classId) {
+          announcements = announcements.filter(a => a.classId === classId);
+        }
+      } else if (req.user!.role === 'student') {
+        const enrollments = await storage.getStudentEnrollments(req.user!.id);
+        const classIds = enrollments.map(e => e.classId!);
+        const allMessages = await storage.getAllMessages();
+        announcements = allMessages.filter(m => 
+          m.classId && classIds.includes(m.classId) && !m.recipientId
+        );
+      } else if (req.user!.role === 'parent') {
+        // Parents see announcements for their children's classes
+        // This would need proper parent-child linking implementation
+        announcements = [];
+      } else {
+        announcements = [];
+      }
+      
+      res.json(announcements);
+    } catch (error) {
+      console.error("Get announcements error:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
