@@ -19,12 +19,10 @@ const StudentDashboard: React.FC = () => {
   const sidebarItems = [
     { id: 'home', label: 'Home', icon: Home },
     { id: 'library', label: 'My Library', icon: BookOpen },
-    { id: 'assignments', label: 'Assignments', icon: Calendar },
     { id: 'todo', label: 'To-do', icon: CheckSquare },
     { id: 'progress', label: 'Progress', icon: TrendingUp },
     { id: 'marks', label: 'Marks & Results', icon: Star },
     { id: 'achievements', label: 'Achievements', icon: Award },
-    { id: 'classes', label: 'My Classes', icon: Users },
     { id: 'join-class', label: 'Join Class', icon: UserPlus },
     { id: 'announcements', label: 'Announcements', icon: Bell },
     { id: 'settings', label: 'Settings', icon: Settings }
@@ -36,8 +34,6 @@ const StudentDashboard: React.FC = () => {
         return <StudentHome />;
       case 'library':
         return <MyLibrary />;
-      case 'assignments':
-        return <StudentAssignments />;
       case 'todo':
         return <TodoList />;
       case 'progress':
@@ -46,8 +42,6 @@ const StudentDashboard: React.FC = () => {
         return <MarksResults />;
       case 'achievements':
         return <Achievements />;
-      case 'classes':
-        return <StudentClassView />;
       case 'join-class':
         return <JoinClass />;
       case 'announcements':

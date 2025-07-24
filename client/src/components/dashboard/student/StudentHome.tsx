@@ -1,72 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import { BookOpen, Calendar, Users, Clock } from 'lucide-react';
-import { apiRequest } from '../../../lib/supabase';
+import React from 'react';
+import { BookOpen, Calendar, Users, Clock, TrendingUp, Bell } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../../contexts/AuthContext';
 
 const StudentHome: React.FC = () => {
   const { user } = useAuth();
-  const [classes, setClasses] = useState<any[]>([]);
-  const [recentAssignments, setRecentAssignments] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (user) {
-      fetchStudentData();
-    }
-  }, [user]);
+  const { data: enrolledClasses = [], isLoading: classesLoading } = useQuery({
+    queryKey: ['/api/student/classes'],
+  });
 
-  const fetchStudentData = async () => {
-    try {
-      // Get enrolled classes
-      const { data: enrollments, error: enrollError } = await supabase
-        .from('class_enrollments')
-        .select(`
-          *,
-          classes (
-            id,
-            name,
-            code,
-            profiles (name)
-          )
-        `)
-        .eq('student_id', user?.id);
+  const { data: assignments = [], isLoading: assignmentsLoading } = useQuery({
+    queryKey: ['/api/assignments'],
+  });
 
-      if (enrollError) throw enrollError;
+  const { data: announcements = [], isLoading: announcementsLoading } = useQuery({
+    queryKey: ['/api/announcements'],
+  });
 
-      setClasses(enrollments || []);
+  const isLoading = classesLoading || assignmentsLoading || announcementsLoading;
 
-      // Get recent assignments
-      const classIds = enrollments?.map(e => e.class_id) || [];
-      if (classIds.length > 0) {
-        const { data: assignments, error: assignmentsError } = await supabase
-          .from('assignments')
-          .select(`
-            *,
-            submissions!left (
-              id,
-              status,
-              submitted_at
-            )
-          `)
-          .in('class_id', classIds)
-          .eq('submissions.student_id', user?.id)
-          .order('due_date', { ascending: true })
-          .limit(5);
-
-        if (assignmentsError) throw assignmentsError;
-        setRecentAssignments(assignments || []);
-      }
-    } catch (error) {
-      console.error('Error fetching student data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
@@ -86,13 +43,14 @@ const StudentHome: React.FC = () => {
             <h2 className="text-xl font-semibold text-gray-900">My Classes</h2>
           </div>
           
-          {classes.length > 0 ? (
+          {enrolledClasses.length > 0 ? (
             <div className="space-y-3">
-              {classes.map((enrollment) => (
+              {enrolledClasses.map((enrollment: any) => (
                 <div key={enrollment.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                  <h3 className="font-medium text-gray-900">{enrollment.classes.name}</h3>
-                  <p className="text-sm text-gray-600">Code: {enrollment.classes.code}</p>
-                  <p className="text-sm text-gray-500">Teacher: {enrollment.classes.profiles?.name}</p>
+                  <h3 className="font-medium text-gray-900">{enrollment.class?.name}</h3>
+                  <p className="text-sm text-gray-600">Code: {enrollment.class?.code}</p>
+                  <p className="text-sm text-gray-500">Teacher: {enrollment.teacher?.name}</p>
+                  <p className="text-xs text-gray-400">Joined: {new Date(enrollment.enrolledAt).toLocaleDateString()}</p>
                 </div>
               ))}
             </div>
@@ -112,23 +70,15 @@ const StudentHome: React.FC = () => {
             <h2 className="text-xl font-semibold text-gray-900">Recent Assignments</h2>
           </div>
           
-          {recentAssignments.length > 0 ? (
+          {assignments.length > 0 ? (
             <div className="space-y-3">
-              {recentAssignments.map((assignment) => (
+              {assignments.slice(0, 5).map((assignment: any) => (
                 <div key={assignment.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
                   <h3 className="font-medium text-gray-900">{assignment.title}</h3>
-                  <div className="flex items-center justify-between mt-2">
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Clock className="h-4 w-4 mr-1" />
-                      Due: {new Date(assignment.due_date).toLocaleDateString()}
-                    </div>
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      assignment.submissions?.[0]?.status === 'submitted' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {assignment.submissions?.[0]?.status || 'Not started'}
-                    </span>
+                  <p className="text-sm text-gray-600">{assignment.description}</p>
+                  <div className="flex items-center mt-2 text-xs text-gray-500">
+                    <Clock className="h-3 w-3 mr-1" />
+                    <span>Due: {new Date(assignment.dueDate).toLocaleDateString()}</span>
                   </div>
                 </div>
               ))}
@@ -137,29 +87,71 @@ const StudentHome: React.FC = () => {
             <div className="text-center py-8">
               <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-600">No assignments yet</p>
-              <p className="text-sm text-gray-500">Your assignments will appear here</p>
+              <p className="text-sm text-gray-500">Assignments will appear here when teachers create them</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-8">
+        {/* Recent Announcements */}
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="flex items-center mb-4">
+            <Bell className="h-6 w-6 text-blue-600 mr-2" />
+            <h2 className="text-xl font-semibold text-gray-900">Recent Announcements</h2>
+          </div>
+          
+          {announcements.length > 0 ? (
+            <div className="space-y-3">
+              {announcements.slice(0, 3).map((announcement: any) => (
+                <div key={announcement.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                  <p className="text-gray-900">{announcement.content}</p>
+                  <p className="text-xs text-gray-500 mt-2">
+                    {new Date(announcement.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <Bell className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600">No announcements yet</p>
+              <p className="text-sm text-gray-500">Teachers' announcements will appear here</p>
             </div>
           )}
         </div>
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-        <div className="bg-blue-50 rounded-lg p-6 text-center">
-          <div className="text-2xl font-bold text-blue-600">{classes.length}</div>
-          <div className="text-sm text-blue-800">Classes Joined</div>
-        </div>
-        <div className="bg-green-50 rounded-lg p-6 text-center">
-          <div className="text-2xl font-bold text-green-600">
-            {recentAssignments.filter(a => a.submissions?.[0]?.status === 'submitted').length}
+      <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-6 text-white">
+          <div className="flex items-center">
+            <Users className="h-8 w-8 mr-3" />
+            <div>
+              <p className="text-sm opacity-90">Classes Joined</p>
+              <p className="text-2xl font-bold">{enrolledClasses.length}</p>
+            </div>
           </div>
-          <div className="text-sm text-green-800">Assignments Submitted</div>
         </div>
-        <div className="bg-yellow-50 rounded-lg p-6 text-center">
-          <div className="text-2xl font-bold text-yellow-600">
-            {recentAssignments.filter(a => !a.submissions?.[0] || a.submissions[0].status === 'not-started').length}
+
+        <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-6 text-white">
+          <div className="flex items-center">
+            <Calendar className="h-8 w-8 mr-3" />
+            <div>
+              <p className="text-sm opacity-90">Assignments</p>
+              <p className="text-2xl font-bold">{assignments.length}</p>
+            </div>
           </div>
-          <div className="text-sm text-yellow-800">Pending Assignments</div>
+        </div>
+
+        <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-6 text-white">
+          <div className="flex items-center">
+            <Bell className="h-8 w-8 mr-3" />
+            <div>
+              <p className="text-sm opacity-90">Announcements</p>
+              <p className="text-2xl font-bold">{announcements.length}</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -389,6 +389,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Student classes route - get enrolled classes with details
+  app.get("/api/student/classes", authenticateUser, async (req: Request, res: Response) => {
+    try {
+      if (req.user!.role !== 'student') {
+        return res.status(403).json({ message: "Only students can view their classes" });
+      }
+
+      const enrollments = await storage.getStudentEnrollments(req.user!.id);
+      
+      // Get class details for each enrollment
+      const classesWithDetails = await Promise.all(
+        enrollments.map(async (enrollment) => {
+          const classInfo = await storage.getClass(enrollment.classId!);
+          const teacher = classInfo ? await storage.getUser(classInfo.teacherId) : null;
+          
+          return {
+            ...enrollment,
+            class: classInfo,
+            teacher: teacher ? { id: teacher.id, name: teacher.name, email: teacher.email } : null
+          };
+        })
+      );
+      
+      res.json(classesWithDetails);
+    } catch (error) {
+      console.error("Get student classes error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Achievement routes
   app.get("/api/achievements", authenticateUser, async (req: Request, res: Response) => {
     try {
