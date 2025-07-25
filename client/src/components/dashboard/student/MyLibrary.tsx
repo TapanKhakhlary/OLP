@@ -1,7 +1,7 @@
 import React from 'react';
 import { useState, useEffect } from 'react';
 import { BookOpen, Clock, CheckCircle, Heart } from 'lucide-react';
-import { apiRequest } from '../../../lib/supabase';
+import { apiRequest } from '../../../lib/queryClient';
 import { useAuth } from '../../../contexts/AuthContext';
 
 const MyLibrary: React.FC = () => {
@@ -17,23 +17,7 @@ const MyLibrary: React.FC = () => {
 
   const fetchUserBooks = async () => {
     try {
-      const { data, error } = await supabase
-        .from('reading_progress')
-        .select(`
-          *,
-          books (
-            id,
-            title,
-            author,
-            genre,
-            cover_url,
-            description
-          )
-        `)
-        .eq('user_id', user?.id);
-
-      if (error) throw error;
-
+      const data = await apiRequest(`/reading-progress/user/${user?.id}`);
       setBooks(data || []);
     } catch (error) {
       console.error('Error fetching books:', error);
@@ -44,16 +28,13 @@ const MyLibrary: React.FC = () => {
 
   const addBookToLibrary = async (bookId: string, status: 'reading' | 'completed' | 'wishlist') => {
     try {
-      const { error } = await supabase
-        .from('reading_progress')
-        .upsert({
-          user_id: user?.id,
-          book_id: bookId,
+      await apiRequest(`/reading-progress/${bookId}`, {
+        method: 'PUT',
+        body: JSON.stringify({
           status,
           progress: status === 'completed' ? 100 : 0,
-        });
-
-      if (error) throw error;
+        }),
+      });
       fetchUserBooks();
     } catch (error) {
       console.error('Error adding book:', error);

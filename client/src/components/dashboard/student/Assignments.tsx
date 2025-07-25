@@ -1,7 +1,7 @@
 import React from 'react';
 import { useState, useEffect } from 'react';
 import { Calendar, Clock, CheckCircle, AlertCircle, Upload, FileText, Cloud } from 'lucide-react';
-import { apiRequest } from '../../../lib/supabase';
+import { apiRequest } from '../../../lib/queryClient';
 import { useAuth } from '../../../contexts/AuthContext';
 
 interface FileUploadProps {

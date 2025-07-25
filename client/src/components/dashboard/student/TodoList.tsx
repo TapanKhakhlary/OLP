@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CheckSquare, Clock, AlertCircle, Calendar } from 'lucide-react';
-import { apiRequest } from '../../../lib/supabase';
+import { apiRequest } from '../../../lib/queryClient';
 import { useAuth } from '../../../contexts/AuthContext';
 
 interface TodoItem {

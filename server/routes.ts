@@ -11,7 +11,7 @@ declare global {
       user?: User;
     }
     interface Session {
-      userId: string;
+      userId?: string;
     }
   }
 }
@@ -49,7 +49,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid input", errors: error.errors });
       }
-      if (error.code === '23505') {
+      if ((error as any).code === '23505') {
         return res.status(400).json({ message: "User with this email already exists" });
       }
       res.status(500).json({ message: "Internal server error" });
@@ -402,7 +402,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const classesWithDetails = await Promise.all(
         enrollments.map(async (enrollment) => {
           const classInfo = await storage.getClass(enrollment.classId!);
-          const teacher = classInfo ? await storage.getUser(classInfo.teacherId) : null;
+          const teacher = classInfo && classInfo.teacherId ? await storage.getUser(classInfo.teacherId) : null;
           
           return {
             ...enrollment,
