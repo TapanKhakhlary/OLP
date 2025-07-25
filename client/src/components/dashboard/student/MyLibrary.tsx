@@ -18,7 +18,7 @@ const MyLibrary: React.FC = () => {
   const fetchUserBooks = async () => {
     try {
       const data = await apiRequest(`/reading-progress/user/${user?.id}`);
-      setBooks(data || []);
+      setBooks(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching books:', error);
     } finally {

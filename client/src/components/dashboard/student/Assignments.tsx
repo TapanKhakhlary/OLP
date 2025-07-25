@@ -98,42 +98,9 @@ const Assignments: React.FC = () => {
 
   const fetchAssignments = async () => {
     try {
-      // Get student's enrolled classes
-      const { data: enrollments, error: enrollError } = await supabase
-        .from('class_enrollments')
-        .select('class_id')
-        .eq('student_id', user?.id);
-
-      if (enrollError) throw enrollError;
-
-      const classIds = enrollments?.map(e => e.class_id) || [];
-
-      if (classIds.length === 0) {
-        setLoading(false);
-        return;
-      }
-
-      // Get assignments for enrolled classes
-      const { data: assignmentsData, error: assignmentsError } = await supabase
-        .from('assignments')
-        .select(`
-          *,
-          books (title),
-          submissions!left (
-            id,
-            status,
-            score,
-            feedback,
-            submitted_at,
-            graded_at
-          )
-        `)
-        .in('class_id', classIds)
-        .eq('submissions.student_id', user?.id);
-
-      if (assignmentsError) throw assignmentsError;
-
-      setAssignments(assignmentsData || []);
+      // Get student's assignments through the API
+      const assignmentsData = await apiRequest(`/student/assignments`);
+      setAssignments(Array.isArray(assignmentsData) ? assignmentsData : []);
     } catch (error) {
       console.error('Error fetching assignments:', error);
     } finally {
@@ -196,17 +163,15 @@ const Assignments: React.FC = () => {
         ? `File submitted: ${selectedFile.name}` 
         : submissionText;
 
-      const { error } = await supabase
-        .from('submissions')
-        .upsert({
-          assignment_id: selectedAssignment.id,
-          student_id: user?.id,
+      await apiRequest(`/submissions`, {
+        method: 'POST',
+        body: JSON.stringify({
+          assignmentId: selectedAssignment.id,
           content,
           status: 'submitted',
-          submitted_at: new Date().toISOString(),
-        });
-
-      if (error) throw error;
+          submittedAt: new Date().toISOString(),
+        }),
+      });
 
       alert('Assignment submitted successfully!');
       setSelectedAssignment(null);

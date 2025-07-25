@@ -19,6 +19,7 @@ export interface IStorage {
   // User/Profile methods
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByStudentCode(studentCode: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: string, user: Partial<InsertUser>): Promise<User | undefined>;
   deleteUser(id: string): Promise<boolean>;
@@ -94,6 +95,9 @@ export interface IStorage {
   linkParentChild(link: InsertParentChildLink): Promise<ParentChildLink>;
   getParentChildren(parentId: string): Promise<ParentChildLink[]>;
   getChildParents(childId: string): Promise<ParentChildLink[]>;
+  
+  // Parent signup with child code
+  linkParentWithChildCode(parentId: string, childCode: string): Promise<ParentChildLink>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -110,12 +114,35 @@ export class DatabaseStorage implements IStorage {
 
   async createUser(user: InsertUser): Promise<User> {
     const hashedPassword = await bcrypt.hash(user.password, 10);
+    
+    // Generate student code for students (for parent linking)
+    let studentCode = null;
+    if (user.role === 'student') {
+      studentCode = this.generateStudentCode();
+      // Ensure uniqueness
+      let existingUser = await this.getUserByStudentCode(studentCode);
+      while (existingUser) {
+        studentCode = this.generateStudentCode();
+        existingUser = await this.getUserByStudentCode(studentCode);
+      }
+    }
+    
     const newUser = await db.insert(profiles).values({
       ...user,
       password: hashedPassword,
+      studentCode,
       id: crypto.randomUUID(),
     }).returning();
     return newUser[0];
+  }
+
+  private generateStudentCode(): string {
+    return Math.random().toString(36).substring(2, 10).toUpperCase();
+  }
+
+  async getUserByStudentCode(studentCode: string): Promise<User | undefined> {
+    const user = await db.select().from(profiles).where(eq(profiles.studentCode, studentCode)).limit(1);
+    return user[0];
   }
 
   async updateUser(id: string, userData: Partial<InsertUser>): Promise<User | undefined> {
@@ -454,6 +481,28 @@ export class DatabaseStorage implements IStorage {
 
   async getChildParents(childId: string): Promise<ParentChildLink[]> {
     return await db.select().from(parentChildLinks).where(eq(parentChildLinks.childId, childId));
+  }
+
+  async linkParentWithChildCode(parentId: string, childCode: string): Promise<ParentChildLink> {
+    // Find student by code
+    const student = await this.getUserByStudentCode(childCode);
+    if (!student || student.role !== 'student') {
+      throw new Error('Invalid student code');
+    }
+
+    // Check if link already exists
+    const existingLink = await db.select().from(parentChildLinks)
+      .where(and(eq(parentChildLinks.parentId, parentId), eq(parentChildLinks.childId, student.id)))
+      .limit(1);
+    
+    if (existingLink.length > 0) {
+      throw new Error('Already linked to this student');
+    }
+
+    return this.linkParentChild({
+      parentId,
+      childId: student.id
+    });
   }
 }
 

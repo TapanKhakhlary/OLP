@@ -27,49 +27,19 @@ const TodoList: React.FC = () => {
 
   const fetchTodos = async () => {
     try {
-      // Get student's enrolled classes
-      const { data: enrollments, error: enrollError } = await supabase
-        .from('class_enrollments')
-        .select('class_id')
-        .eq('student_id', user?.id);
-
-      if (enrollError) throw enrollError;
-
-      const classIds = enrollments?.map(e => e.class_id) || [];
-
-      if (classIds.length === 0) {
-        setLoading(false);
-        return;
-      }
-
-      // Get assignments for enrolled classes
-      const { data: assignments, error: assignmentsError } = await supabase
-        .from('assignments')
-        .select(`
-          *,
-          classes (name),
-          submissions!left (
-            id,
-            status,
-            submitted_at
-          )
-        `)
-        .in('class_id', classIds)
-        .eq('submissions.student_id', user?.id)
-        .order('due_date', { ascending: true });
-
-      if (assignmentsError) throw assignmentsError;
-
+      // Get student's assignments through the API
+      const assignmentsData = await apiRequest(`/student/assignments`);
+      
       // Transform assignments into todo items
-      const todoItems: TodoItem[] = assignments?.map(assignment => ({
+      const todoItems: TodoItem[] = Array.isArray(assignmentsData) ? assignmentsData.map((assignment: any) => ({
         id: assignment.id,
         title: assignment.title,
         description: assignment.description || '',
-        due_date: assignment.due_date,
+        due_date: assignment.dueDate,
         status: assignment.submissions?.[0]?.status || 'not-started',
         type: 'assignment' as const,
-        class_name: assignment.classes?.name
-      })) || [];
+        class_name: assignment.class?.name
+      })) : [];
 
       setTodos(todoItems);
     } catch (error) {

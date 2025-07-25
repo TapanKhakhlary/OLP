@@ -1,0 +1,91 @@
+Please implement and fix the following features to align the platform experience closely with Google Classroom standards:
+
+1. 🛠️ Class Join Bug Fix
+Issue: When a student joins a class using a class code, it doesn’t reflect in "My Classes".
+
+Action: Debug and fix this. Ensure that joining a class updates both the backend (DB) and frontend (UI) under the student’s account.
+
+2. 📝 Assignment Creation (Teacher)
+Goal: Make the assignment creation UI and functionality similar to Google Classroom.
+
+Include:
+
+Title, Instructions
+
+Upload options (files, YouTube link, Google Drive-style uploads)
+
+Due Date, Topic/Categorization
+
+3. 👪 Parent Signup Connection
+Issue: Parent signup requires a child's code, but no such code is generated in the student profile.
+
+Fix:
+
+Generate a unique child code on student profile creation.
+
+Show this code in the student’s profile view.
+
+Allow parents to link using this code and fetch the relevant student’s data.
+
+4. 🔐 Google Sign-In
+Feature: Add Google OAuth login.
+
+Applies To: Students, Teachers, and Parents.
+
+Note: Use Supabase Auth or Firebase Auth (whichever you're using) to implement secure login and session management.
+
+5. 🔑 Forgot Password Workflow
+Feature: When users click "Forgot Password", provide them with a way to reset their password.
+
+Expected Behavior: Send an email with a secure reset link (like Google), and let them enter a new password from a secure reset form.
+
+6. 🎥 Live Class Integration
+Goal: Enable live classes for teachers similar to Google Meet.
+
+Implementation:
+
+Embed video conferencing (Jitsi Meet, Daily.co, Zoom SDK, or Google Meet if possible)
+
+Only teachers can start sessions
+
+Students get "Join Live Class" button in the class dashboard when session is live
+
+7. 🔗 System Integration
+Instruction: Ensure all parts are fully connected.
+
+Teacher ↔ Student ↔ Parent
+
+Class ↔ Assignment ↔ Submissions
+
+Notifications for all major actions (assignment added, live class started, submission made, etc.)
+
+8. 📤 Assignment Submission (Student)
+Goal: Make submission UI like Google Classroom.
+
+Include:
+
+Upload files (multiple formats)
+
+Add comments for the teacher
+
+Submit and Resubmit options
+
+View assigned & submitted status clearly
+
+9. 🖼️ Profile Picture Customization
+Feature: Allow all users (student, teacher, parent) to upload or change profile pictures.
+
+Requirement:
+
+Default avatar + Upload option
+
+Save to cloud (Supabase storage or S3)
+
+Use consistent avatar UI across the app
+
+✅ Final Note:
+Ensure all systems are interconnected properly.
+
+Maintain user feedback and error states.
+
+UI/UX should closely resemble Google Classroom, especially in key workflows like assignments, submissions, and live classes.

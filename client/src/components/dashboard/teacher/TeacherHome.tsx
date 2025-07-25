@@ -18,36 +18,12 @@ const TeacherHome: React.FC = () => {
   const fetchTeacherData = async () => {
     try {
       // Get teacher's classes
-      const { data: classesData, error: classesError } = await supabase
-        .from('classes')
-        .select(`
-          *,
-          class_enrollments (
-            id,
-            profiles (name)
-          )
-        `)
-        .eq('teacher_id', user?.id);
-
-      if (classesError) throw classesError;
-
-      const classesWithCounts = classesData?.map(cls => ({
-        ...cls,
-        studentCount: cls.class_enrollments?.length || 0
-      })) || [];
-
-      setClasses(classesWithCounts);
+      const classesData = await apiRequest(`/classes`);
+      setClasses(Array.isArray(classesData) ? classesData : []);
 
       // Get recent assignments
-      const { data: assignments, error: assignmentsError } = await supabase
-        .from('assignments')
-        .select('*')
-        .eq('teacher_id', user?.id)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (assignmentsError) throw assignmentsError;
-      setRecentAssignments(assignments || []);
+      const assignments = await apiRequest(`/assignments`);
+      setRecentAssignments(Array.isArray(assignments) ? assignments.slice(0, 5) : []);
     } catch (error) {
       console.error('Error fetching teacher data:', error);
     } finally {

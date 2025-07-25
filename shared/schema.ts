@@ -15,6 +15,8 @@ export const profiles = pgTable("profiles", {
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
   role: userRoleEnum("role").notNull(),
+  studentCode: text("student_code").unique(), // Unique code for parent linking
+  profilePicture: text("profile_picture"), // URL to profile picture
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

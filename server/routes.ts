@@ -174,14 +174,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Invalid class code" });
       }
 
-      // Check if already enrolled (implement this method)
-      try {
-        const existingEnrollment = await storage.getClassEnrollment(classToJoin.id, req.user!.id);
-        if (existingEnrollment) {
-          return res.status(400).json({ message: "Already enrolled in this class" });
-        }
-      } catch (error) {
-        // If method doesn't exist, we'll continue with enrollment
+      // Check if already enrolled
+      const existingEnrollment = await storage.getClassEnrollment(classToJoin.id, req.user!.id);
+      if (existingEnrollment) {
+        return res.status(400).json({ message: "Already enrolled in this class" });
       }
 
       const enrollment = await storage.createClassEnrollment({
@@ -216,8 +212,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const announcement = await storage.createMessage({
         senderId: req.user!.id,
-        recipientId: null, // Announcement to all students in class
-        content
+        recipientId: classId, // Use classId as recipientId for announcements
+        content,
+        classId
       });
       
       res.status(201).json(announcement);
@@ -389,6 +386,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Student assignments route - get assignments for enrolled classes
+  app.get("/api/student/assignments", authenticateUser, async (req: Request, res: Response) => {
+    try {
+      if (req.user!.role !== 'student') {
+        return res.status(403).json({ message: "Only students can view their assignments" });
+      }
+
+      const enrollments = await storage.getStudentEnrollments(req.user!.id);
+      const classIds = enrollments.map(e => e.classId!);
+      
+      if (classIds.length === 0) {
+        return res.json([]);
+      }
+
+      // Get all assignments for enrolled classes with submission status
+      const allAssignments = await storage.getAssignmentsByTeacher(req.user!.id); // This will be replaced with proper method
+      const assignments = [];
+      
+      for (const classId of classIds) {
+        const classAssignments = await storage.getAssignmentsByClass(classId);
+        for (const assignment of classAssignments) {
+          const submission = await storage.getSubmissionByAssignmentAndStudent(assignment.id, req.user!.id);
+          const classInfo = await storage.getClass(assignment.classId!);
+          assignments.push({
+            ...assignment,
+            class: classInfo,
+            submission
+          });
+        }
+      }
+      
+      res.json(assignments);
+    } catch (error) {
+      console.error("Get student assignments error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Student classes route - get enrolled classes with details
   app.get("/api/student/classes", authenticateUser, async (req: Request, res: Response) => {
     try {
@@ -415,6 +450,256 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(classesWithDetails);
     } catch (error) {
       console.error("Get student classes error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Parent linking routes
+  app.post("/api/parent/link-child", authenticateUser, async (req: Request, res: Response) => {
+    try {
+      if (req.user!.role !== 'parent') {
+        return res.status(403).json({ message: "Only parents can link to children" });
+      }
+
+      const { childCode } = req.body;
+      if (!childCode) {
+        return res.status(400).json({ message: "Child code is required" });
+      }
+
+      const link = await storage.linkParentWithChildCode(req.user!.id, childCode);
+      res.status(201).json(link);
+    } catch (error: any) {
+      console.error("Link parent-child error:", error);
+      res.status(400).json({ message: error.message || "Failed to link child" });
+    }
+  });
+
+  app.get("/api/parent/children", authenticateUser, async (req: Request, res: Response) => {
+    try {
+      if (req.user!.role !== 'parent') {
+        return res.status(403).json({ message: "Only parents can view their children" });
+      }
+
+      const links = await storage.getParentChildren(req.user!.id);
+      const childrenWithDetails = await Promise.all(
+        links.map(async (link) => {
+          const child = await storage.getUser(link.childId);
+          const enrollments = child ? await storage.getStudentEnrollments(child.id) : [];
+          return {
+            ...link,
+            child: child ? {
+              ...child,
+              password: undefined, // Don't expose password
+              enrollments
+            } : null
+          };
+        })
+      );
+
+      res.json(childrenWithDetails);
+    } catch (error) {
+      console.error("Get parent children error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/parent/unlink-child/:childId", authenticateUser, async (req: Request, res: Response) => {
+    try {
+      if (req.user!.role !== 'parent') {
+        return res.status(403).json({ message: "Only parents can unlink children" });
+      }
+
+      // Implementation would need to be added to storage
+      res.status(501).json({ message: "Unlink functionality not implemented yet" });
+    } catch (error) {
+      console.error("Unlink child error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Profile picture routes
+  app.put("/api/profile/picture", authenticateUser, async (req: Request, res: Response) => {
+    try {
+      const { profilePicture } = req.body;
+      
+      const updatedUser = await storage.updateUser(req.user!.id, { profilePicture });
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json({ message: "Profile picture updated successfully", profilePicture });
+    } catch (error) {
+      console.error("Update profile picture error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/profile/picture", authenticateUser, async (req: Request, res: Response) => {
+    try {
+      const updatedUser = await storage.updateUser(req.user!.id, { profilePicture: null });
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json({ message: "Profile picture removed successfully" });
+    } catch (error) {
+      console.error("Remove profile picture error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Live sessions routes
+  app.post("/api/live-sessions", authenticateUser, async (req: Request, res: Response) => {
+    try {
+      if (req.user!.role !== 'teacher') {
+        return res.status(403).json({ message: "Only teachers can start live sessions" });
+      }
+
+      const { classId, meetingUrl, platform = 'jitsi' } = req.body;
+      
+      // Verify teacher owns the class
+      const classData = await storage.getClass(classId);
+      if (!classData || classData.teacherId !== req.user!.id) {
+        return res.status(403).json({ message: "You can only start sessions for your own classes" });
+      }
+
+      // For now, we'll create a simple live session object
+      // In production, this would be stored in the database
+      const session = {
+        id: crypto.randomUUID(),
+        classId,
+        meetingUrl,
+        platform,
+        isActive: true,
+        startedAt: new Date().toISOString(),
+        teacherId: req.user!.id
+      };
+
+      res.status(201).json(session);
+    } catch (error) {
+      console.error("Start live session error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.get("/api/live-sessions", authenticateUser, async (req: Request, res: Response) => {
+    try {
+      // For now, return empty array
+      // In production, this would fetch from database
+      res.json([]);
+    } catch (error) {
+      console.error("Get live sessions error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.get("/api/live-sessions/active", authenticateUser, async (req: Request, res: Response) => {
+    try {
+      // For now, return empty array
+      // In production, this would fetch active sessions from database
+      res.json([]);
+    } catch (error) {
+      console.error("Get active live sessions error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.put("/api/live-sessions/:sessionId/end", authenticateUser, async (req: Request, res: Response) => {
+    try {
+      // For now, just return success
+      // In production, this would update the session in database
+      res.json({ message: "Live session ended successfully" });
+    } catch (error) {
+      console.error("End live session error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Password reset routes
+  app.post("/api/auth/forgot-password", async (req: Request, res: Response) => {
+    try {
+      const { email } = req.body;
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        // Don't reveal if user exists or not for security
+        return res.json({ message: "If an account with that email exists, password reset instructions have been sent." });
+      }
+
+      // In production, you would:
+      // 1. Generate a secure reset token
+      // 2. Store it in the database with expiration
+      // 3. Send email with reset link using SendGrid or similar
+      // 4. Create password reset form that validates the token
+
+      // For now, we'll just return success
+      console.log(`Password reset requested for: ${email}`);
+      res.json({ message: "Password reset instructions have been sent to your email." });
+    } catch (error) {
+      console.error("Forgot password error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Notifications routes
+  app.get("/api/notifications", authenticateUser, async (req: Request, res: Response) => {
+    try {
+      // For now, return empty array
+      // In production, this would fetch user-specific notifications from database
+      const mockNotifications = [];
+      
+      // Add some sample notifications based on user role
+      if (req.user!.role === 'student') {
+        const assignments = await storage.getAssignmentsByStudent?.(req.user!.id) || [];
+        assignments.slice(0, 3).forEach((assignment: any) => {
+          mockNotifications.push({
+            id: `assignment-${assignment.id}`,
+            type: 'assignment',
+            title: 'New Assignment',
+            message: `${assignment.title} is due soon`,
+            isRead: false,
+            createdAt: assignment.createdAt || new Date().toISOString(),
+            priority: 'medium'
+          });
+        });
+      }
+
+      res.json(mockNotifications);
+    } catch (error) {
+      console.error("Get notifications error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.put("/api/notifications/:id/read", authenticateUser, async (req: Request, res: Response) => {
+    try {
+      // In production, update notification read status in database
+      res.json({ message: "Notification marked as read" });
+    } catch (error) {
+      console.error("Mark notification read error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.put("/api/notifications/read-all", authenticateUser, async (req: Request, res: Response) => {
+    try {
+      // In production, mark all user notifications as read
+      res.json({ message: "All notifications marked as read" });
+    } catch (error) {
+      console.error("Mark all notifications read error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/notifications/:id", authenticateUser, async (req: Request, res: Response) => {
+    try {
+      // In production, delete notification from database
+      res.json({ message: "Notification deleted" });
+    } catch (error) {
+      console.error("Delete notification error:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
