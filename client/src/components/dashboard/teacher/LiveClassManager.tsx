@@ -66,7 +66,7 @@ const LiveClassManager: React.FC = () => {
         })
       });
 
-      setLiveSessions(prev => [...prev, session]);
+      setLiveSessions(prev => [...prev, session as LiveSession]);
       
       // Open meeting in new tab
       window.open(meetingUrl, '_blank');

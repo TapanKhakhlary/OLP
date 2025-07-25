@@ -55,6 +55,10 @@ export const assignments = pgTable("assignments", {
   teacherId: uuid("teacher_id").references(() => profiles.id, { onDelete: "cascade" }),
   dueDate: timestamp("due_date").notNull(),
   maxScore: integer("max_score").default(100),
+  topic: text("topic"), // Topic/Category for organization
+  youtubeLink: text("youtube_link"), // YouTube video links
+  driveLink: text("drive_link"), // Google Drive or file links
+  attachments: text("attachments").array(), // File attachments URLs
   createdAt: timestamp("created_at").defaultNow(),
 });
 

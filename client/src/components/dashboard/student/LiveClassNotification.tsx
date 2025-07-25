@@ -26,7 +26,8 @@ const LiveClassNotification: React.FC<LiveClassNotificationProps> = ({ onClose }
     try {
       // Get student's enrolled classes first
       const enrollments = await apiRequest('/student/classes');
-      const classIds = enrollments.map((e: any) => e.classId);
+      const enrollmentsArray = Array.isArray(enrollments) ? enrollments : [];
+      const classIds = enrollmentsArray.map((e: any) => e.classId);
       
       if (classIds.length === 0) {
         setLoading(false);

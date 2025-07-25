@@ -10,7 +10,7 @@ import {
   type InsertParentChildLink, type User, type InsertUser
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, gt } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 
@@ -548,7 +548,13 @@ export class MemStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = crypto.randomUUID();
     const user: User = { 
-      ...insertUser, 
+      ...insertUser,
+      studentCode: insertUser.studentCode || null,
+      profilePicture: null,
+      googleId: null,
+      isEmailVerified: false,
+      passwordResetToken: null,
+      passwordResetExpires: null,
       id, 
       createdAt: new Date(),
       updatedAt: new Date() 
@@ -556,6 +562,12 @@ export class MemStorage implements IStorage {
     this.users.set(id, user);
     return user;
   }
+
+  // Missing required methods for interface compliance
+  async getUserByStudentCode(): Promise<User | undefined> { throw new Error("Not implemented in MemStorage"); }
+  async linkParentWithChildCode(): Promise<ParentChildLink> { throw new Error("Not implemented in MemStorage"); }
+  async getUserByResetToken(): Promise<User | undefined> { throw new Error("Not implemented in MemStorage"); }
+  async updateUserPassword(): Promise<void> { throw new Error("Not implemented in MemStorage"); }
 
   // Stub implementations for other methods
   async updateUser(): Promise<User | undefined> { throw new Error("Not implemented in MemStorage"); }

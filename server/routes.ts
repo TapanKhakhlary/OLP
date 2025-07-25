@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { insertProfileSchema, insertClassSchema, insertAssignmentSchema, insertSubmissionSchema, type User } from "@shared/schema";
 import { z } from "zod";
 import crypto from "crypto";
+import { sendPasswordResetEmail } from "./emailService";
 
 // Utility functions
 function generateStudentCode(): string {
@@ -20,9 +21,12 @@ declare global {
     interface Request {
       user?: User;
     }
-    interface Session {
-      userId?: string;
-    }
+  }
+}
+
+declare module 'express-session' {
+  interface SessionData {
+    userId?: string;
   }
 }
 
@@ -493,7 +497,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const links = await storage.getParentChildren(req.user!.id);
       const childrenWithDetails = await Promise.all(
         links.map(async (link) => {
-          const child = await storage.getUser(link.childId);
+          const child = await storage.getUser(link.childId!);
           const enrollments = child ? await storage.getStudentEnrollments(child.id) : [];
           return {
             ...link,
@@ -754,7 +758,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Generate a secure reset token
       const resetToken = generateResetToken();
-      const resetExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+      const resetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
       // Update user with reset token
       await storage.updateUser(user.id, {
@@ -762,12 +766,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         passwordResetExpires: resetExpires
       });
 
-      // In production, send email with reset link using SendGrid
-      console.log(`Password reset requested for: ${email}`);
-      console.log(`Reset token: ${resetToken}`);
-      console.log(`Reset link: ${process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://your-domain.com'}/auth/reset-password?token=${resetToken}`);
+      // Send password reset email
+      const emailSent = await sendPasswordResetEmail(email, resetToken, user.name);
       
-      res.json({ message: "Password reset instructions have been sent to your email." });
+      if (!emailSent) {
+        console.error('Failed to send password reset email to:', email);
+        // Continue with success response for security (don't reveal if email failed)
+      }
+      
+      console.log(`Password reset requested for: ${email}`);
+      res.json({ message: "If an account with that email exists, password reset instructions have been sent." });
     } catch (error) {
       console.error("Forgot password error:", error);
       res.status(500).json({ message: "Internal server error" });

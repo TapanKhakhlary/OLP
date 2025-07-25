@@ -13,7 +13,7 @@ const JoinClass: React.FC = () => {
   // Join class mutation
   const joinClassMutation = useMutation({
     mutationFn: classesAPI.joinClass,
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       // Invalidate both classes and student classes queries to update MyClasses immediately
       queryClient.invalidateQueries({ queryKey: ['/api/classes'] });
       queryClient.invalidateQueries({ queryKey: ['/api/student/classes'] });
