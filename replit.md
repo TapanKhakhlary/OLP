@@ -57,6 +57,10 @@ LitPlatform is a comprehensive educational reading platform designed for teacher
 - **Announcement Reception**: Receive class updates from teachers
 - **Grade Tracking**: Monitor assignment scores and teacher feedback
 
+## Test Credentials
+- **Student Account**: Email: `cobra@gmail.com`, Password: `test123`
+- **Teacher Account**: Email: `tapankhakhlari123@gmail.com`, Password: (check database)
+
 ## Recent Changes (July 2025 - Migration and Full Platform Implementation)
 - **Successfully Migrated to Replit**: Completed full migration from Replit Agent to standard Replit environment with PostgreSQL database
 - **Enhanced Assignment System**: Upgraded assignment creation with Google Classroom-style features including file uploads, YouTube links, topic categorization, and due dates
@@ -68,6 +72,12 @@ LitPlatform is a comprehensive educational reading platform designed for teacher
 - **Type Safety Improvements**: Fixed TypeScript errors across components ensuring robust type checking and better development experience
 - **System Integration**: All features now work together seamlessly with proper authentication, authorization, and data flow
 - **Production Ready**: Application is fully functional with all 7 requested Google Classroom-aligned features implemented and tested
+- **Fixed Student Class Join Bug (July 25, 2025)**: Resolved critical issue where student dashboard showed empty after joining classes
+  - Fixed double `/api` prefix issue in query client that was causing `/api/api/student/classes` calls
+  - Added dedicated `/api/student/classes` endpoint with enriched enrollment data including class and teacher details
+  - Enhanced student dashboard with Google Classroom-style interface showing proper class cards
+  - Fixed authentication flow - student login now works with credentials: cobra@gmail.com / test123
+  - Verified data integrity: Student is properly enrolled in "Social Science" class with teacher "Tapan Khakhlary"
 
 ## Development Guidelines
 
