@@ -170,6 +170,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Join class route with proper implementation
+  // Student-specific routes
+  app.get("/api/student/classes", authenticateUser, async (req: Request, res: Response) => {
+    try {
+      if (req.user!.role !== 'student') {
+        return res.status(403).json({ message: "Only students can access this endpoint" });
+      }
+
+      const enrollments = await storage.getStudentEnrollments(req.user!.id);
+      
+      // Get detailed enrollment data with class and teacher information
+      const enrichedEnrollments = await Promise.all(
+        enrollments.map(async (enrollment) => {
+          const classData = await storage.getClass(enrollment.classId!);
+          const teacher = classData && classData.teacherId ? await storage.getUser(classData.teacherId) : null;
+          
+          return {
+            ...enrollment,
+            class: classData,
+            teacher: teacher ? { id: teacher.id, name: teacher.name, email: teacher.email } : null
+          };
+        })
+      );
+      
+      res.json(enrichedEnrollments);
+    } catch (error) {
+      console.error("Get student classes error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   app.post("/api/classes/join", authenticateUser, async (req: Request, res: Response) => {
     try {
       console.log("User attempting to join class:", req.user);
