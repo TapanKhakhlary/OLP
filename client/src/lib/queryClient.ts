@@ -20,7 +20,9 @@ queryClient.setDefaultOptions({
   queries: {
     queryFn: async ({ queryKey }) => {
       const [url] = queryKey as [string];
-      return apiRequest(url);
+      // Remove /api prefix since apiRequest adds it
+      const cleanUrl = url.startsWith('/api') ? url.slice(4) : url;
+      return apiRequest(cleanUrl);
     },
   },
 });
