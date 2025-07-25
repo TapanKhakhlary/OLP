@@ -17,6 +17,10 @@ export const profiles = pgTable("profiles", {
   role: userRoleEnum("role").notNull(),
   studentCode: text("student_code").unique(), // Unique code for parent linking
   profilePicture: text("profile_picture"), // URL to profile picture
+  googleId: text("google_id"),
+  isEmailVerified: boolean("is_email_verified").default(false),
+  passwordResetToken: text("password_reset_token"),
+  passwordResetExpires: timestamp("password_reset_expires"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

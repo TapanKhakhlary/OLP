@@ -3,6 +3,16 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertProfileSchema, insertClassSchema, insertAssignmentSchema, insertSubmissionSchema, type User } from "@shared/schema";
 import { z } from "zod";
+import crypto from "crypto";
+
+// Utility functions
+function generateStudentCode(): string {
+  return Math.random().toString(36).substr(2, 8).toUpperCase();
+}
+
+function generateResetToken(): string {
+  return crypto.randomBytes(32).toString('hex');
+}
 
 // Extend the Request interface to include user and session
 declare global {
@@ -615,6 +625,119 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Google Auth routes
+  app.post("/api/auth/google-user", async (req: Request, res: Response) => {
+    try {
+      const { googleId, email } = req.body;
+      
+      // Check if user exists with this Google ID or email
+      const existingUser = await storage.getUserByEmail(email);
+      if (!existingUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Return user without password
+      const { password, ...userWithoutPassword } = existingUser;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Google user lookup error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/auth/complete-google-signup", async (req: Request, res: Response) => {
+    try {
+      const { googleId, email, name, profilePicture, role } = req.body;
+      
+      if (!googleId || !email || !name || !role) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "User already exists" });
+      }
+
+      // Create new user with Google data
+      const userData = {
+        name,
+        email,
+        password: '', // No password for Google users
+        role,
+        profilePicture,
+        googleId,
+        isEmailVerified: true, // Google accounts are verified
+        ...(role === 'student' && { studentCode: generateStudentCode() })
+      };
+
+      const newUser = await storage.createUser(userData);
+      
+      // Create session
+      req.session!.userId = newUser.id;
+      
+      // Return user without password
+      const { password, ...userWithoutPassword } = newUser;
+      res.status(201).json(userWithoutPassword);
+    } catch (error) {
+      console.error("Complete Google signup error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Password reset token validation route
+  app.post("/api/auth/validate-reset-token", async (req: Request, res: Response) => {
+    try {
+      const { token } = req.body;
+      if (!token) {
+        return res.status(400).json({ message: "Token is required" });
+      }
+
+      // Find user with this reset token that hasn't expired
+      const user = await storage.getUserByResetToken(token);
+      if (!user) {
+        return res.status(400).json({ message: "Invalid or expired reset token" });
+      }
+
+      res.json({ message: "Token is valid" });
+    } catch (error) {
+      console.error("Validate reset token error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Reset password with token
+  app.post("/api/auth/reset-password", async (req: Request, res: Response) => {
+    try {
+      const { token, newPassword } = req.body;
+      if (!token || !newPassword) {
+        return res.status(400).json({ message: "Token and new password are required" });
+      }
+
+      if (newPassword.length < 8) {
+        return res.status(400).json({ message: "Password must be at least 8 characters long" });
+      }
+
+      // Find user with this reset token that hasn't expired
+      const user = await storage.getUserByResetToken(token);
+      if (!user) {
+        return res.status(400).json({ message: "Invalid or expired reset token" });
+      }
+
+      // Update password and clear reset token
+      await storage.updateUserPassword(user.id, newPassword);
+      await storage.updateUser(user.id, {
+        passwordResetToken: null,
+        passwordResetExpires: null
+      });
+
+      res.json({ message: "Password reset successfully" });
+    } catch (error) {
+      console.error("Reset password error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Password reset routes
   app.post("/api/auth/forgot-password", async (req: Request, res: Response) => {
     try {
@@ -629,14 +752,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ message: "If an account with that email exists, password reset instructions have been sent." });
       }
 
-      // In production, you would:
-      // 1. Generate a secure reset token
-      // 2. Store it in the database with expiration
-      // 3. Send email with reset link using SendGrid or similar
-      // 4. Create password reset form that validates the token
+      // Generate a secure reset token
+      const resetToken = generateResetToken();
+      const resetExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-      // For now, we'll just return success
+      // Update user with reset token
+      await storage.updateUser(user.id, {
+        passwordResetToken: resetToken,
+        passwordResetExpires: resetExpires
+      });
+
+      // In production, send email with reset link using SendGrid
       console.log(`Password reset requested for: ${email}`);
+      console.log(`Reset token: ${resetToken}`);
+      console.log(`Reset link: ${process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://your-domain.com'}/auth/reset-password?token=${resetToken}`);
+      
       res.json({ message: "Password reset instructions have been sent to your email." });
     } catch (error) {
       console.error("Forgot password error:", error);
@@ -647,23 +777,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Notifications routes
   app.get("/api/notifications", authenticateUser, async (req: Request, res: Response) => {
     try {
-      // For now, return empty array
+      // For now, return empty array with proper typing
       // In production, this would fetch user-specific notifications from database
-      const mockNotifications = [];
+      const mockNotifications: any[] = [];
       
       // Add some sample notifications based on user role
       if (req.user!.role === 'student') {
-        const assignments = await storage.getAssignmentsByStudent?.(req.user!.id) || [];
-        assignments.slice(0, 3).forEach((assignment: any) => {
-          mockNotifications.push({
-            id: `assignment-${assignment.id}`,
-            type: 'assignment',
-            title: 'New Assignment',
-            message: `${assignment.title} is due soon`,
-            isRead: false,
-            createdAt: assignment.createdAt || new Date().toISOString(),
-            priority: 'medium'
-          });
+        // In production, this would query actual assignments
+        mockNotifications.push({
+          id: 'sample-notification',
+          type: 'assignment',
+          title: 'Welcome to LitPlatform',
+          message: 'Complete your profile to get started',
+          isRead: false,
+          createdAt: new Date().toISOString(),
+          priority: 'medium'
         });
       }
 

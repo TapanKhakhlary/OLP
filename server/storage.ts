@@ -98,6 +98,10 @@ export interface IStorage {
   
   // Parent signup with child code
   linkParentWithChildCode(parentId: string, childCode: string): Promise<ParentChildLink>;
+  
+  // Password reset methods
+  getUserByResetToken(token: string): Promise<User | undefined>;
+  updateUserPassword(userId: string, newPassword: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -503,6 +507,25 @@ export class DatabaseStorage implements IStorage {
       parentId,
       childId: student.id
     });
+  }
+
+  async getUserByResetToken(token: string): Promise<User | undefined> {
+    const [user] = await db.select().from(profiles)
+      .where(and(
+        eq(profiles.passwordResetToken, token),
+        gt(profiles.passwordResetExpires, new Date())
+      ))
+      .limit(1);
+    return user || undefined;
+  }
+
+  async updateUserPassword(userId: string, newPassword: string): Promise<void> {
+    const bcrypt = await import('bcrypt');
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    
+    await db.update(profiles)
+      .set({ password: hashedPassword })
+      .where(eq(profiles.id, userId));
   }
 }
 

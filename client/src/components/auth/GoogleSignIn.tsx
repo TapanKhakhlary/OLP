@@ -1,8 +1,15 @@
 import React, { useState } from 'react';
 import { FcGoogle } from 'react-icons/fc';
 import { useAuth } from '../../contexts/AuthContext';
+import { signInWithGoogle, isFirebaseConfigured } from '../../firebase';
+import { apiRequest } from '../../lib/queryClient';
 
-const GoogleSignIn: React.FC = () => {
+interface GoogleSignInProps {
+  mode?: 'signin' | 'signup';
+  userRole?: 'student' | 'teacher' | 'parent';
+}
+
+const GoogleSignIn: React.FC<GoogleSignInProps> = ({ mode = 'signin', userRole }) => {
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
 
@@ -10,22 +17,18 @@ const GoogleSignIn: React.FC = () => {
     try {
       setIsLoading(true);
       
-      // For now, we'll show a message about Firebase setup
-      alert('Google Sign-In requires Firebase configuration. Please set up Firebase Auth in your project settings.');
+      // Check if Firebase is configured
+      if (!isFirebaseConfigured) {
+        alert('Google Sign-In requires Firebase configuration. Please add your Firebase credentials to the environment variables.');
+        return;
+      }
       
-      // Future implementation would use Firebase Auth:
-      /*
-      import { signInWithRedirect, GoogleAuthProvider } from 'firebase/auth';
-      import { auth } from '../../firebase';
-      
-      const provider = new GoogleAuthProvider();
-      await signInWithRedirect(auth, provider);
-      */
+      // Redirect to Google for authentication
+      await signInWithGoogle();
       
     } catch (error) {
       console.error('Google Sign-In error:', error);
       alert('Failed to sign in with Google. Please try again.');
-    } finally {
       setIsLoading(false);
     }
   };
@@ -38,7 +41,7 @@ const GoogleSignIn: React.FC = () => {
     >
       <FcGoogle className="h-5 w-5 mr-3" />
       <span className="text-sm font-medium">
-        {isLoading ? 'Signing in...' : 'Continue with Google'}
+        {isLoading ? 'Redirecting...' : `${mode === 'signup' ? 'Sign up' : 'Continue'} with Google`}
       </span>
     </button>
   );

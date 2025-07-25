@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { UserRole } from '../../types';
 import { Eye, EyeOff } from 'lucide-react';
+import GoogleSignIn from './GoogleSignIn';
 
 interface SignupFormProps {
   onSuccess: () => void;
@@ -30,9 +31,7 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, onSwitchToLogin }) =
         formData.name,
         formData.email,
         formData.password,
-        formData.role as UserRole,
-        formData.classCode || undefined,
-        formData.parentCode || undefined
+        formData.role as UserRole
       );
       onSuccess();
     } catch (error) {
@@ -139,6 +138,17 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSuccess, onSwitchToLogin }) =
       >
         {isLoading ? 'Creating Account...' : 'Create Account'}
       </button>
+
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-gray-300" />
+        </div>
+        <div className="relative flex justify-center text-sm">
+          <span className="px-2 bg-white text-gray-500">Or continue with</span>
+        </div>
+      </div>
+
+      <GoogleSignIn mode="signup" userRole={formData.role as UserRole} />
 
       <div className="text-center">
         <p className="text-sm text-gray-600">
