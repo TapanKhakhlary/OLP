@@ -27,4 +27,10 @@ queryClient.setDefaultOptions({
   },
 });
 
+// Helper function to ensure consistent query keys
+export const getQueryKey = (endpoint: string) => {
+  // Ensure endpoint doesn't have double /api prefix
+  return [endpoint.startsWith('/api') ? endpoint : `/api${endpoint}`];
+};
+
 export { apiRequest };

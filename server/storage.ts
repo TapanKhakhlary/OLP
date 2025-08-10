@@ -112,6 +112,26 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
+    // For development mode with mock database
+    if (process.env.NODE_ENV === 'development') {
+      // In development, simulate a user lookup by email
+      if (email === 'test@example.com') {
+        return {
+          id: 'test-user-id',
+          name: 'Test User',
+          email: email,
+          password: await bcrypt.hash('password123', 10),
+          role: 'student',
+          studentCode: this.generateStudentCode(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          resetToken: null,
+          resetTokenExpiry: null
+        };
+      }
+      return undefined;
+    }
+    
     const user = await db.select().from(profiles).where(eq(profiles.email, email)).limit(1);
     return user[0];
   }
@@ -129,6 +149,24 @@ export class DatabaseStorage implements IStorage {
         studentCode = this.generateStudentCode();
         existingUser = await this.getUserByStudentCode(studentCode);
       }
+    }
+    
+    // For development mode with mock database
+    if (process.env.NODE_ENV === 'development') {
+      const id = crypto.randomUUID();
+      const newUser: User = {
+        id,
+        name: user.name,
+        email: user.email,
+        password: hashedPassword,
+        role: user.role,
+        studentCode,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        resetToken: null,
+        resetTokenExpiry: null
+      };
+      return newUser;
     }
     
     const newUser = await db.insert(profiles).values({
@@ -166,6 +204,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async authenticateUser(email: string, password: string): Promise<User | null> {
+    // For development mode with mock database
+    if (process.env.NODE_ENV === 'development') {
+      // In development, accept any credentials for testing
+      return {
+        id: crypto.randomUUID(),
+        name: 'Test User',
+        email: email,
+        password: await bcrypt.hash(password, 10),
+        role: 'student',
+        studentCode: this.generateStudentCode(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        resetToken: null,
+        resetTokenExpiry: null
+      };
+    }
+    
     const user = await this.getUserByEmail(email);
     if (!user) return null;
     

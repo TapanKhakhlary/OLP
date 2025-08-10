@@ -1,7 +1,10 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { MongoDBStorage } from "./mongoStorage";
 import { insertProfileSchema, insertClassSchema, insertAssignmentSchema, insertSubmissionSchema, type User } from "@shared/schema";
+
+// Initialize MongoDB storage
+const storage = new MongoDBStorage();
 import { z } from "zod";
 import crypto from "crypto";
 import { sendPasswordResetEmail } from "./emailService";

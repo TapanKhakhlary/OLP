@@ -1,10 +1,11 @@
 import React from 'react';
 import { Users, Calendar, BookOpen, User } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
+import { getQueryKey } from '../../../lib/queryClient';
 
 const MyClasses: React.FC = () => {
   const { data: enrolledClasses = [], isLoading } = useQuery({
-    queryKey: ['/api/student/classes'],
+    queryKey: getQueryKey('/student/classes'),
   });
 
   if (isLoading) {

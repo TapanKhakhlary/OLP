@@ -1,11 +1,23 @@
 import { MailService } from '@sendgrid/mail';
 
-if (!process.env.SENDGRID_API_KEY) {
-  throw new Error("SENDGRID_API_KEY environment variable must be set");
-}
+let mailService: any;
 
-const mailService = new MailService();
-mailService.setApiKey(process.env.SENDGRID_API_KEY);
+if (process.env.NODE_ENV === 'development') {
+  console.log('Using mock email service for development');
+  // Create a mock mail service for development
+  mailService = {
+    send: async (params: any) => {
+      console.log('Mock email sent:', params);
+      return [{ statusCode: 200 }];
+    }
+  };
+} else {
+  if (!process.env.SENDGRID_API_KEY) {
+    throw new Error("SENDGRID_API_KEY environment variable must be set");
+  }
+  mailService = new MailService();
+  mailService.setApiKey(process.env.SENDGRID_API_KEY);
+}
 
 interface EmailParams {
   to: string;
@@ -32,7 +44,7 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
 }
 
 export async function sendPasswordResetEmail(email: string, resetToken: string, userName: string): Promise<boolean> {
-  const resetUrl = `${process.env.NODE_ENV === 'production' ? 'https://' : 'http://'}${process.env.REPLIT_DEV_DOMAIN || 'localhost:5000'}/reset-password?token=${resetToken}`;
+  const resetUrl = `${process.env.NODE_ENV === 'production' ? 'https://' : 'http://'}localhost:5000/reset-password?token=${resetToken}`;
   
   const htmlContent = `
     <!DOCTYPE html>

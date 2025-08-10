@@ -2,20 +2,21 @@ import React from 'react';
 import { BookOpen, Calendar, Users, Clock, TrendingUp, Bell } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../../contexts/AuthContext';
+import { getQueryKey } from '../../../lib/queryClient';
 
 const StudentHome: React.FC = () => {
   const { user } = useAuth();
 
   const { data: enrolledClasses = [], isLoading: classesLoading } = useQuery({
-    queryKey: ['/api/student/classes'],
+    queryKey: getQueryKey('/student/classes'),
   });
 
   const { data: assignments = [], isLoading: assignmentsLoading } = useQuery({
-    queryKey: ['/api/assignments'],
+    queryKey: getQueryKey('/assignments'),
   });
 
   const { data: announcements = [], isLoading: announcementsLoading } = useQuery({
-    queryKey: ['/api/announcements'],
+    queryKey: getQueryKey('/announcements'),
   });
 
   const isLoading = classesLoading || assignmentsLoading || announcementsLoading;

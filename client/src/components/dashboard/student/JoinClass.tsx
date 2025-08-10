@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { UserPlus, Users, CheckCircle } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 import { classesAPI } from '../../../lib/api';
-import { queryClient } from '../../../lib/queryClient';
+import { queryClient, getQueryKey } from '../../../lib/queryClient';
 import { useAuth } from '../../../contexts/AuthContext';
 
 const JoinClass: React.FC = () => {
@@ -15,8 +15,8 @@ const JoinClass: React.FC = () => {
     mutationFn: classesAPI.joinClass,
     onSuccess: (data: any) => {
       // Invalidate both classes and student classes queries to update MyClasses immediately
-      queryClient.invalidateQueries({ queryKey: ['/api/classes'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/student/classes'] });
+      queryClient.invalidateQueries({ queryKey: getQueryKey('/classes') });
+      queryClient.invalidateQueries({ queryKey: getQueryKey('/student/classes') });
       setMessage({ 
         type: 'success', 
         text: `Successfully joined class: ${data.class?.name || 'Unknown Class'}!` 
